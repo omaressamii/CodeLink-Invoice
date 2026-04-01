@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Inter:wght@400;700&display=swap');
+
+:root {
+  direction: rtl;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  line-height: 1.6;
+}
+
+.font-arabic {
+  font-family: 'Cairo', sans-serif;
+}
+
+.font-sans {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Fix for html2canvas and Tailwind 4 oklch/oklab colors */
+.receipt-container, .receipt-container * {
+  color: #151619 !important;
+  border-color: #e5e7eb !important;
+  background-color: transparent !important;
+  direction: rtl;
+  text-align: right;
+  letter-spacing: 0 !important;
+  word-spacing: 0 !important;
+  font-variant-ligatures: common-ligatures !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Cairo', 'Inter', sans-serif !important;
+}
+
+.receipt-container {
+  background-color: #ffffff !important;
+}
+
+.receipt-container .bg-\[\#151619\] {
+  background-color: #151619 !important;
+}
+
+.receipt-container .text-white {
+  color: #ffffff !important;
+}
+
+.receipt-container .text-orange-500 {
+  color: #f97316 !important;
+}
+
+.receipt-container .bg-orange-500 {
+  background-color: #f97316 !important;
+}
+
+.receipt-container .text-orange-600 {
+  color: #ea580c !important;
+}
+
+.receipt-container .text-red-500 {
+  color: #ef4444 !important;
+}
+
+.receipt-container .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.receipt-container .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.receipt-container .bg-gray-50 {
+  background-color: #f9fafb !important;
+}
+
+.receipt-container .border-gray-100 {
+  border-color: #f3f4f6 !important;
+}
+
+.receipt-container .border-gray-200 {
+  border-color: #e5e7eb !important;
+}
+
+.receipt-container .font-sans {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.receipt-container .font-mono {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.receipt-container .font-arabic {
+  font-family: 'Cairo', sans-serif !important;
+}
