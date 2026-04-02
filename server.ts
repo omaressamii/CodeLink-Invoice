@@ -60,6 +60,7 @@ db.exec(`
     total_price REAL NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'converted', 'rejected')),
+    notes TEXT,
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
   );
@@ -77,6 +78,7 @@ db.exec(`
     payment_plan TEXT NOT NULL CHECK(payment_plan IN ('cash', 'installments')),
     status TEXT DEFAULT 'active' CHECK(status IN ('active', 'completed', 'cancelled', 'expired')),
     start_date DATE DEFAULT CURRENT_DATE,
+    notes TEXT,
     FOREIGN KEY (quotation_id) REFERENCES quotations(id),
     FOREIGN KEY (client_id) REFERENCES clients(id),
     FOREIGN KEY (product_id) REFERENCES products(id)
@@ -158,6 +160,14 @@ async function startServer() {
     db.prepare("INSERT INTO audit_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)")
       .run(userId, action, entity, entityId, details);
   };
+
+  // Migration: Add notes column if it doesn't exist
+  try {
+    db.prepare("ALTER TABLE quotations ADD COLUMN notes TEXT").run();
+  } catch (e) {}
+  try {
+    db.prepare("ALTER TABLE contracts ADD COLUMN notes TEXT").run();
+  } catch (e) {}
 
   // Auth Middleware
   const authenticateToken = (req: any, res: any, next: any) => {
@@ -252,7 +262,7 @@ async function startServer() {
   });
 
   app.post("/api/quotations", authenticateToken, (req, res) => {
-    const { client_id, product_id, total_price, items } = req.body;
+    const { client_id, product_id, total_price, items, notes } = req.body;
     const itemsJson = items ? JSON.stringify(items) : null;
     
     // Ensure product_id is not null for backward compatibility if items exist
@@ -261,8 +271,8 @@ async function startServer() {
       finalProductId = items[0].product_id;
     }
 
-    const result = db.prepare("INSERT INTO quotations (client_id, product_id, total_price, items_json) VALUES (?, ?, ?, ?)")
-      .run(client_id, finalProductId || null, total_price, itemsJson);
+    const result = db.prepare("INSERT INTO quotations (client_id, product_id, total_price, items_json, notes) VALUES (?, ?, ?, ?, ?)")
+      .run(client_id, finalProductId || null, total_price, itemsJson, notes || null);
     auditLog((req as any).user.id, "CREATE", "quotations", Number(result.lastInsertRowid), `تم إنشاء عرض سعر للعميل رقم ${client_id}`);
     res.json({ id: result.lastInsertRowid });
   });
@@ -293,7 +303,7 @@ async function startServer() {
   });
 
   app.post("/api/contracts", authenticateToken, (req, res) => {
-    const { quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan, items } = req.body;
+    const { quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan, items, notes } = req.body;
     const itemsJson = items ? JSON.stringify(items) : null;
 
     // Ensure product_id is not null for backward compatibility if items exist
@@ -302,8 +312,8 @@ async function startServer() {
       finalProductId = items[0].product_id;
     }
 
-    const result = db.prepare("INSERT INTO contracts (quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan, items_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      .run(quotation_id, client_id, finalProductId || null, total_price, discount || 0, duration_months, payment_plan, itemsJson);
+    const result = db.prepare("INSERT INTO contracts (quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan, items_json, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(quotation_id, client_id, finalProductId || null, total_price, discount || 0, duration_months, payment_plan, itemsJson, notes || null);
     
     const contractId = Number(result.lastInsertRowid);
 

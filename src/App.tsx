@@ -743,7 +743,8 @@ const Quotations = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ 
     client_id: "", 
-    items: [{ product_id: "", price: "" }] 
+    items: [{ product_id: "", price: "" }],
+    notes: ""
   });
 
   const calculateTotal = (items: any[]) => {
@@ -774,7 +775,7 @@ const Quotations = () => {
 
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
-  const [convertData, setConvertData] = useState({ duration_months: 12, payment_plan: "installments", discount: 0 });
+  const [convertData, setConvertData] = useState({ duration_months: 12, payment_plan: "installments", discount: 0, notes: "" });
 
   const fetchData = async () => {
     setLoading(true);
@@ -796,10 +797,11 @@ const Quotations = () => {
       await api.createQuotation({ 
         client_id: formData.client_id,
         items: formData.items.map(it => ({ ...it, price: parseFloat(it.price) })),
-        total_price 
+        total_price,
+        notes: formData.notes
       });
       setShowModal(false);
-      setFormData({ client_id: "", items: [{ product_id: "", price: "" }] });
+      setFormData({ client_id: "", items: [{ product_id: "", price: "" }], notes: "" });
       fetchData();
       notify("تم إنشاء عرض السعر بنجاح!");
     } catch (err: any) {
@@ -817,7 +819,8 @@ const Quotations = () => {
         discount: convertData.discount,
         duration_months: convertData.duration_months,
         payment_plan: convertData.payment_plan,
-        items: selectedQuotation.items
+        items: selectedQuotation.items,
+        notes: convertData.notes
       });
       setShowConvertModal(false);
       notify("تم إنشاء العقد بنجاح!");
@@ -847,6 +850,7 @@ const Quotations = () => {
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">العميل</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المنتج</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">إجمالي السعر</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">ملاحظات</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الحالة</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-left font-arabic">إجراءات</th>
             </tr>
@@ -872,6 +876,7 @@ const Quotations = () => {
                   )}
                 </td>
                 <td className="px-6 py-4 font-bold text-gray-900">{q.total_price.toLocaleString()} ج.م</td>
+                <td className="px-6 py-4 text-sm text-gray-500 font-arabic max-w-xs truncate" title={q.notes}>{formatArabic(q.notes)}</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     q.status === 'pending' ? 'bg-orange-100 text-orange-700' : 
@@ -942,6 +947,15 @@ const Quotations = () => {
                   value={convertData.discount}
                   onChange={e => setConvertData({...convertData, discount: parseFloat(e.target.value)})}
                   className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">ملاحظات</label>
+                <textarea 
+                  value={convertData.notes}
+                  onChange={e => setConvertData({...convertData, notes: e.target.value})}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
+                  rows={2}
                 />
               </div>
               <div className="bg-orange-50 p-4 rounded-xl">
@@ -1046,6 +1060,16 @@ const Quotations = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">ملاحظات</label>
+                <textarea 
+                  value={formData.notes}
+                  onChange={e => setFormData({...formData, notes: e.target.value})}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
+                  rows={2}
+                />
+              </div>
+
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
                 <button type="submit" className="flex-1 py-3 bg-orange-500 text-black font-bold rounded-xl hover:bg-orange-600 transition-all font-arabic">إنشاء عرض السعر</button>
@@ -1066,6 +1090,7 @@ const Contracts = () => {
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("تحويل بنكي");
+  const [paymentNotes, setPaymentNotes] = useState("");
 
   const fetchContracts = () => {
     setLoading(true);
@@ -1082,10 +1107,12 @@ const Contracts = () => {
       await api.createPayment({
         contract_id: selectedContract.id,
         amount: parseFloat(paymentAmount),
-        method: paymentMethod
+        method: paymentMethod,
+        notes: paymentNotes
       });
       setShowPaymentModal(false);
       setPaymentAmount("");
+      setPaymentNotes("");
       fetchContracts();
       notify("تم تسجيل الدفعة بنجاح!");
     } catch (err: any) {
@@ -1110,6 +1137,7 @@ const Contracts = () => {
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الصافي</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المدفوع</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المتبقي</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">ملاحظات</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الحالة</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-left font-arabic">إجراءات</th>
             </tr>
@@ -1139,6 +1167,7 @@ const Contracts = () => {
                 <td className="px-6 py-4 font-bold text-gray-900">{(c.total_price - (c.discount || 0)).toLocaleString()} ج.م</td>
                 <td className="px-6 py-4 text-sm text-green-600">{c.paid_amount.toLocaleString()} ج.م</td>
                 <td className="px-6 py-4 text-sm text-red-500 font-bold">{(c.total_price - (c.discount || 0) - c.paid_amount).toLocaleString()} ج.م</td>
+                <td className="px-6 py-4 text-sm text-gray-500 font-arabic max-w-xs truncate" title={c.notes}>{formatArabic(c.notes)}</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     c.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
@@ -1200,6 +1229,15 @@ const Contracts = () => {
                   <option value="شيك">شيك</option>
                   <option value="بطاقة ائتمان">بطاقة ائتمان</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">ملاحظات</label>
+                <textarea 
+                  value={paymentNotes}
+                  onChange={e => setPaymentNotes(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
+                  rows={2}
+                />
               </div>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
@@ -1344,7 +1382,7 @@ const Payments = () => {
           </div>
 
           {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-16 mb-16">
+          <div className="grid grid-cols-2 gap-16 mb-12">
             <div className="space-y-6">
               <div className="border-r-4 border-orange-500 pr-4">
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400 font-arabic">{formatArabic("العميل / السيد")}</p>
@@ -1367,6 +1405,13 @@ const Payments = () => {
               </div>
             </div>
           </div>
+
+          {selectedPayment?.notes && (
+            <div className="mb-12 p-6 bg-gray-50 rounded-2xl border-r-4 border-gray-200">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-gray-400 font-arabic">{formatArabic("ملاحظات إضافية")}</p>
+              <p className="text-sm font-arabic text-gray-600 leading-relaxed">{formatArabic(selectedPayment.notes)}</p>
+            </div>
+          )}
 
           {/* Amount Section */}
           <div className="bg-[#151619] rounded-[40px] p-12 mb-16 relative overflow-hidden">
@@ -1449,6 +1494,7 @@ const Payments = () => {
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">العميل</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المبلغ</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الطريقة</th>
+              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">ملاحظات</th>
               <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-left font-arabic">إجراءات</th>
             </tr>
           </thead>
@@ -1461,6 +1507,7 @@ const Payments = () => {
                 <td className="px-6 py-4 font-bold text-gray-900 font-arabic" dir="auto">{formatArabic(p.company_name)}</td>
                 <td className="px-6 py-4 font-bold text-green-600">{p.amount.toLocaleString()} ج.م</td>
                 <td className="px-6 py-4 text-sm text-gray-600 font-arabic" dir="auto">{formatArabic(p.method)}</td>
+                <td className="px-6 py-4 text-sm text-gray-500 font-arabic max-w-xs truncate" title={p.notes}>{formatArabic(p.notes)}</td>
                 <td className="px-6 py-4 text-left">
                   <button 
                     onClick={() => exportReceipt(p)}
