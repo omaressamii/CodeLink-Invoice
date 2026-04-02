@@ -741,7 +741,36 @@ const Quotations = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ client_id: "", product_id: "", total_price: "" });
+  const [formData, setFormData] = useState({ 
+    client_id: "", 
+    items: [{ product_id: "", price: "" }] 
+  });
+
+  const calculateTotal = (items: any[]) => {
+    return items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  };
+
+  const addItem = () => {
+    setFormData({ ...formData, items: [...formData.items, { product_id: "", price: "" }] });
+  };
+
+  const removeItem = (index: number) => {
+    const newItems = formData.items.filter((_, i) => i !== index);
+    setFormData({ ...formData, items: newItems.length ? newItems : [{ product_id: "", price: "" }] });
+  };
+
+  const updateItem = (index: number, field: string, value: string) => {
+    const newItems = [...formData.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    
+    // Auto-fill price if product changes
+    if (field === 'product_id') {
+      const p = products.find(p => p.id === parseInt(value));
+      if (p) newItems[index].price = p.price.toString();
+    }
+    
+    setFormData({ ...formData, items: newItems });
+  };
 
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState<any>(null);
@@ -763,9 +792,14 @@ const Quotations = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.createQuotation({ ...formData, total_price: parseFloat(formData.total_price) });
+      const total_price = calculateTotal(formData.items);
+      await api.createQuotation({ 
+        client_id: formData.client_id,
+        items: formData.items.map(it => ({ ...it, price: parseFloat(it.price) })),
+        total_price 
+      });
       setShowModal(false);
-      setFormData({ client_id: "", product_id: "", total_price: "" });
+      setFormData({ client_id: "", items: [{ product_id: "", price: "" }] });
       fetchData();
       notify("تم إنشاء عرض السعر بنجاح!");
     } catch (err: any) {
@@ -779,11 +813,11 @@ const Quotations = () => {
       await api.createContract({
         quotation_id: selectedQuotation.id,
         client_id: selectedQuotation.client_id,
-        product_id: selectedQuotation.product_id,
         total_price: selectedQuotation.total_price,
         discount: convertData.discount,
         duration_months: convertData.duration_months,
-        payment_plan: convertData.payment_plan
+        payment_plan: convertData.payment_plan,
+        items: selectedQuotation.items
       });
       setShowConvertModal(false);
       notify("تم إنشاء العقد بنجاح!");
@@ -823,7 +857,20 @@ const Quotations = () => {
             ) : quotations.map((q) => (
               <tr key={q.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 font-bold text-gray-900 font-arabic">{formatArabic(q.company_name)}</td>
-                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">{formatArabic(q.product_name)}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">
+                  {q.items && q.items.length > 0 ? (
+                    <div className="space-y-1">
+                      {q.items.map((it: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                          <span>{formatArabic(it.product_name)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    formatArabic(q.product_name)
+                  )}
+                </td>
                 <td className="px-6 py-4 font-bold text-gray-900">{q.total_price.toLocaleString()} ج.م</td>
                 <td className="px-6 py-4">
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -925,7 +972,7 @@ const Quotations = () => {
               <h2 className="text-xl font-bold text-gray-900 font-arabic">عرض سعر جديد</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">العميل</label>
                 <select 
@@ -938,30 +985,67 @@ const Quotations = () => {
                   {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">المنتج</label>
-                <select 
-                  required
-                  value={formData.product_id}
-                  onChange={e => {
-                    const p = products.find(p => p.id === parseInt(e.target.value));
-                    setFormData({...formData, product_id: e.target.value, total_price: p ? p.price.toString() : ""});
-                  }}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                >
-                  <option value="">اختر المنتج</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-gray-400 uppercase font-arabic">المنتجات</label>
+                  <button 
+                    type="button"
+                    onClick={addItem}
+                    className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 font-arabic"
+                  >
+                    <Plus size={14} />
+                    <span>إضافة منتج</span>
+                  </button>
+                </div>
+
+                {formData.items.map((item, index) => (
+                  <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3 relative">
+                    {formData.items.length > 1 && (
+                      <button 
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        className="absolute top-2 left-2 text-gray-400 hover:text-red-500"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 font-arabic">المنتج</label>
+                        <select 
+                          required
+                          value={item.product_id}
+                          onChange={e => updateItem(index, 'product_id', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm"
+                        >
+                          <option value="">اختر المنتج</option>
+                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 font-arabic">السعر (ج.م)</label>
+                        <input 
+                          type="number" required step="0.01"
+                          value={item.price}
+                          onChange={e => updateItem(index, 'price', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm text-right"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">السعر المعروض (ج.م)</label>
-                <input 
-                  type="number" required step="0.01"
-                  value={formData.total_price}
-                  onChange={e => setFormData({...formData, total_price: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                />
+
+              <div className="bg-orange-50 p-4 rounded-xl">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold text-orange-800 font-arabic">إجمالي السعر:</span>
+                  <span className="text-lg font-bold text-orange-900">
+                    {calculateTotal(formData.items).toLocaleString()} ج.م
+                  </span>
+                </div>
               </div>
+
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
                 <button type="submit" className="flex-1 py-3 bg-orange-500 text-black font-bold rounded-xl hover:bg-orange-600 transition-all font-arabic">إنشاء عرض السعر</button>
@@ -1036,7 +1120,20 @@ const Contracts = () => {
             ) : contracts.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 font-bold text-gray-900 font-arabic">{formatArabic(c.company_name)}</td>
-                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">{formatArabic(c.product_name)}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">
+                  {c.items && c.items.length > 0 ? (
+                    <div className="space-y-1">
+                      {c.items.map((it: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                          <span>{formatArabic(it.product_name)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    formatArabic(c.product_name)
+                  )}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-400">{c.total_price.toLocaleString()} ج.م</td>
                 <td className="px-6 py-4 text-sm text-orange-500">{c.discount?.toLocaleString()} ج.م</td>
                 <td className="px-6 py-4 font-bold text-gray-900">{(c.total_price - (c.discount || 0)).toLocaleString()} ج.م</td>
@@ -1409,7 +1506,20 @@ const Licenses = () => {
               </span>
             </div>
             <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-1 font-arabic">{formatArabic(l.product_name)}</h3>
+              <div className="text-lg font-bold text-gray-900 mb-1 font-arabic">
+                {l.items && l.items.length > 0 ? (
+                  <div className="space-y-1">
+                    {l.items.map((it: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                        <span>{formatArabic(it.product_name)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  formatArabic(l.product_name)
+                )}
+              </div>
               <p className="text-sm text-gray-500 font-arabic">العميل: {formatArabic(l.company_name)}</p>
             </div>
             <div className="bg-gray-50 p-4 rounded-xl mb-4 font-mono text-sm break-all border border-gray-100">

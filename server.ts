@@ -55,7 +55,8 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quotations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     client_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
+    product_id INTEGER, -- Kept for backward compatibility
+    items_json TEXT, -- Stores array of {product_id, price}
     total_price REAL NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'converted', 'rejected')),
@@ -67,7 +68,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     quotation_id INTEGER,
     client_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
+    product_id INTEGER, -- Kept for backward compatibility
+    items_json TEXT, -- Stores array of {product_id, price}
     total_price REAL NOT NULL,
     discount REAL DEFAULT 0,
     paid_amount REAL DEFAULT 0,
@@ -112,6 +114,23 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 `);
+
+// Migration to add items_json if it doesn't exist
+try {
+  db.exec("ALTER TABLE quotations ADD COLUMN items_json TEXT");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE contracts ADD COLUMN items_json TEXT");
+} catch (e) {}
+try {
+  db.exec("ALTER TABLE quotations MODIFY COLUMN product_id INTEGER NULL");
+} catch (e) {
+  // SQLite doesn't support MODIFY COLUMN directly, but we already updated the CREATE TABLE statement.
+  // For existing tables, we just ensure the new column exists.
+}
+try {
+  db.exec("ALTER TABLE contracts MODIFY COLUMN product_id INTEGER NULL");
+} catch (e) {}
 
 // Seed Roles and Admin User if not exists
 const seed = () => {
@@ -213,15 +232,37 @@ async function startServer() {
       SELECT q.*, c.company_name, p.name as product_name 
       FROM quotations q
       JOIN clients c ON q.client_id = c.id
-      JOIN products p ON q.product_id = p.id
-    `).all();
-    res.json(quotations);
+      LEFT JOIN products p ON q.product_id = p.id
+    `).all() as any[];
+    
+    const products = db.prepare("SELECT id, name FROM products").all() as any[];
+    const productMap = new Map(products.map(p => [p.id, p.name]));
+
+    const result = quotations.map(q => {
+      let items = [];
+      if (q.items_json) {
+        try {
+          items = JSON.parse(q.items_json);
+          items = items.map((it: any) => ({ ...it, product_name: productMap.get(it.product_id) }));
+        } catch (e) {}
+      }
+      return { ...q, items };
+    });
+    res.json(result);
   });
 
   app.post("/api/quotations", authenticateToken, (req, res) => {
-    const { client_id, product_id, total_price } = req.body;
-    const result = db.prepare("INSERT INTO quotations (client_id, product_id, total_price) VALUES (?, ?, ?)")
-      .run(client_id, product_id, total_price);
+    const { client_id, product_id, total_price, items } = req.body;
+    const itemsJson = items ? JSON.stringify(items) : null;
+    
+    // Ensure product_id is not null for backward compatibility if items exist
+    let finalProductId = product_id;
+    if (!finalProductId && items && items.length > 0) {
+      finalProductId = items[0].product_id;
+    }
+
+    const result = db.prepare("INSERT INTO quotations (client_id, product_id, total_price, items_json) VALUES (?, ?, ?, ?)")
+      .run(client_id, finalProductId || null, total_price, itemsJson);
     auditLog((req as any).user.id, "CREATE", "quotations", Number(result.lastInsertRowid), `تم إنشاء عرض سعر للعميل رقم ${client_id}`);
     res.json({ id: result.lastInsertRowid });
   });
@@ -232,15 +273,37 @@ async function startServer() {
       SELECT con.*, c.company_name, p.name as product_name 
       FROM contracts con
       JOIN clients c ON con.client_id = c.id
-      JOIN products p ON con.product_id = p.id
-    `).all();
-    res.json(contracts);
+      LEFT JOIN products p ON con.product_id = p.id
+    `).all() as any[];
+
+    const products = db.prepare("SELECT id, name FROM products").all() as any[];
+    const productMap = new Map(products.map(p => [p.id, p.name]));
+
+    const result = contracts.map(c => {
+      let items = [];
+      if (c.items_json) {
+        try {
+          items = JSON.parse(c.items_json);
+          items = items.map((it: any) => ({ ...it, product_name: productMap.get(it.product_id) }));
+        } catch (e) {}
+      }
+      return { ...c, items };
+    });
+    res.json(result);
   });
 
   app.post("/api/contracts", authenticateToken, (req, res) => {
-    const { quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan } = req.body;
-    const result = db.prepare("INSERT INTO contracts (quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run(quotation_id, client_id, product_id, total_price, discount || 0, duration_months, payment_plan);
+    const { quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan, items } = req.body;
+    const itemsJson = items ? JSON.stringify(items) : null;
+
+    // Ensure product_id is not null for backward compatibility if items exist
+    let finalProductId = product_id;
+    if (!finalProductId && items && items.length > 0) {
+      finalProductId = items[0].product_id;
+    }
+
+    const result = db.prepare("INSERT INTO contracts (quotation_id, client_id, product_id, total_price, discount, duration_months, payment_plan, items_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(quotation_id, client_id, finalProductId || null, total_price, discount || 0, duration_months, payment_plan, itemsJson);
     
     const contractId = Number(result.lastInsertRowid);
 
@@ -294,13 +357,27 @@ async function startServer() {
   // Licenses
   app.get("/api/licenses", authenticateToken, (req, res) => {
     const licenses = db.prepare(`
-      SELECT l.*, c.company_name, p.name as product_name
+      SELECT l.*, c.company_name, p.name as product_name, con.items_json
       FROM licenses l
       JOIN clients c ON l.client_id = c.id
       JOIN contracts con ON l.contract_id = con.id
-      JOIN products p ON con.product_id = p.id
-    `).all();
-    res.json(licenses);
+      LEFT JOIN products p ON con.product_id = p.id
+    `).all() as any[];
+
+    const products = db.prepare("SELECT id, name FROM products").all() as any[];
+    const productMap = new Map(products.map(p => [p.id, p.name]));
+
+    const result = licenses.map(l => {
+      let items = [];
+      if (l.items_json) {
+        try {
+          items = JSON.parse(l.items_json);
+          items = items.map((it: any) => ({ ...it, product_name: productMap.get(it.product_id) }));
+        } catch (e) {}
+      }
+      return { ...l, items };
+    });
+    res.json(result);
   });
 
   // Dashboard Stats
