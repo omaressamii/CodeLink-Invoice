@@ -31,6 +31,7 @@ db.exec(`
     role_id INTEGER NOT NULL,
     full_name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
+    permissions TEXT, -- JSON array of permissions
     FOREIGN KEY (role_id) REFERENCES roles(id)
   );
 
@@ -115,7 +116,28 @@ db.exec(`
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
+
+// Seed default settings if not exists
+const defaultSettings = [
+  { key: 'company_name', value: 'CodeLink Software' },
+  { key: 'company_address', value: 'القاهرة، الفرع الرئيسي' },
+  { key: 'company_phone', value: '01017955955' },
+  { key: 'company_email', value: 'support@codelink.software' },
+  { key: 'company_website', value: 'WWW.CODELINK.SOFTWARE' },
+  { key: 'receipt_footer_note', value: 'Thank you for your business and trust in our products.' }
+];
+
+const checkSettings = db.prepare("SELECT COUNT(*) as count FROM settings").get() as any;
+if (checkSettings.count === 0) {
+  const insertSetting = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+  defaultSettings.forEach(s => insertSetting.run(s.key, s.value));
+}
 
 // Migration to add items_json if it doesn't exist
 try {
@@ -134,6 +156,11 @@ try {
   db.exec("ALTER TABLE contracts MODIFY COLUMN product_id INTEGER NULL");
 } catch (e) {}
 
+// Migration to add permissions to users if it doesn't exist
+try {
+  db.exec("ALTER TABLE users ADD COLUMN permissions TEXT");
+} catch (e) {}
+
 // Seed Roles and Admin User if not exists
 const seed = () => {
   const roles = db.prepare("SELECT COUNT(*) as count FROM roles").get() as { count: number };
@@ -144,11 +171,16 @@ const seed = () => {
 
     const adminRole = db.prepare("SELECT id FROM roles WHERE name = 'مدير'").get() as { id: number };
     const hashedPassword = bcrypt.hashSync("admin123", 10);
-    db.prepare("INSERT INTO users (username, password, role_id, full_name, email) VALUES (?, ?, ?, ?, ?)")
-      .run("admin", hashedPassword, adminRole.id, "مدير النظام", "admin@codelink.com");
+    const allPermissions = JSON.stringify(["dashboard", "clients", "products", "quotations", "contracts", "payments", "licenses", "audit-logs", "settings", "users"]);
+    db.prepare("INSERT INTO users (username, password, role_id, full_name, email, permissions) VALUES (?, ?, ?, ?, ?, ?)")
+      .run("admin", hashedPassword, adminRole.id, "مدير النظام", "admin@codelink.com", allPermissions);
   }
 };
 seed();
+
+// Ensure admin has all permissions if they were missing
+const allPerms = JSON.stringify(["dashboard", "clients", "products", "quotations", "contracts", "payments", "licenses", "audit-logs", "settings", "users"]);
+db.prepare("UPDATE users SET permissions = ? WHERE username = 'admin' AND (permissions IS NULL OR permissions = '')").run(allPerms);
 
 async function startServer() {
   const app = express();
@@ -197,7 +229,71 @@ async function startServer() {
     }
 
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role_name }, JWT_SECRET);
-    res.json({ token, user: { id: user.id, username: user.username, role: user.role_name, fullName: user.full_name } });
+    res.json({ token, user: { id: user.id, username: user.username, role: user.role_name, fullName: user.full_name, permissions: user.permissions ? JSON.parse(user.permissions) : [] } });
+  });
+  
+  // Users Management
+  app.get("/api/users", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") return res.status(403).json({ error: "Unauthorized" });
+    const users = db.prepare(`
+      SELECT u.id, u.username, u.full_name, u.email, u.permissions, r.name as role_name, r.id as role_id
+      FROM users u
+      JOIN roles r ON u.role_id = r.id
+    `).all() as any[];
+    
+    const result = users.map(u => ({
+      ...u,
+      permissions: u.permissions ? JSON.parse(u.permissions) : []
+    }));
+    res.json(result);
+  });
+
+  app.post("/api/users", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") return res.status(403).json({ error: "Unauthorized" });
+    const { username, password, full_name, email, role_id, permissions } = req.body;
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const permissionsJson = permissions ? JSON.stringify(permissions) : null;
+    
+    try {
+      const result = db.prepare("INSERT INTO users (username, password, full_name, email, role_id, permissions) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(username, hashedPassword, full_name, email, role_id, permissionsJson);
+      auditLog((req as any).user.id, "CREATE", "users", Number(result.lastInsertRowid), `تم إنشاء المستخدم ${username}`);
+      res.json({ id: result.lastInsertRowid });
+    } catch (e: any) {
+      res.status(400).json({ error: "اسم المستخدم أو البريد الإلكتروني موجود مسبقاً" });
+    }
+  });
+
+  app.put("/api/users/:id", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") return res.status(403).json({ error: "Unauthorized" });
+    const { username, full_name, email, role_id, permissions, password } = req.body;
+    const permissionsJson = permissions ? JSON.stringify(permissions) : null;
+    
+    if (password) {
+      const hashedPassword = bcrypt.hashSync(password, 10);
+      db.prepare("UPDATE users SET username = ?, password = ?, full_name = ?, email = ?, role_id = ?, permissions = ? WHERE id = ?")
+        .run(username, hashedPassword, full_name, email, role_id, permissionsJson, req.params.id);
+    } else {
+      db.prepare("UPDATE users SET username = ?, full_name = ?, email = ?, role_id = ?, permissions = ? WHERE id = ?")
+        .run(username, full_name, email, role_id, permissionsJson, req.params.id);
+    }
+    
+    auditLog((req as any).user.id, "UPDATE", "users", Number(req.params.id), `تم تحديث المستخدم ${username}`);
+    res.json({ success: true });
+  });
+
+  app.delete("/api/users/:id", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") return res.status(403).json({ error: "Unauthorized" });
+    if (Number(req.params.id) === (req as any).user.id) return res.status(400).json({ error: "لا يمكنك حذف نفسك" });
+    
+    db.prepare("DELETE FROM users WHERE id = ?").run(req.params.id);
+    auditLog((req as any).user.id, "DELETE", "users", Number(req.params.id), `تم حذف المستخدم رقم ${req.params.id}`);
+    res.json({ success: true });
+  });
+
+  app.get("/api/roles", authenticateToken, (req, res) => {
+    const roles = db.prepare("SELECT * FROM roles").all();
+    res.json(roles);
   });
 
   // Clients
@@ -354,13 +450,29 @@ async function startServer() {
 
   app.get("/api/payments", authenticateToken, (req, res) => {
     const payments = db.prepare(`
-      SELECT py.*, con.product_id, p.name as product_name, c.company_name, con.total_price as contract_total, con.discount as contract_discount, con.paid_amount as contract_paid
+      SELECT py.*, con.product_id, p.name as product_name, c.company_name, con.total_price as contract_total, con.discount as contract_discount, con.paid_amount as contract_paid, con.items_json
       FROM payments py
       JOIN contracts con ON py.contract_id = con.id
       JOIN clients c ON con.client_id = c.id
       JOIN products p ON con.product_id = p.id
       ORDER BY py.payment_date DESC
     `).all();
+
+    const products = db.prepare("SELECT id, name FROM products").all() as any[];
+    const productMap = products.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {});
+
+    payments.forEach((p: any) => {
+      if (p.items_json) {
+        try {
+          p.items = JSON.parse(p.items_json).map((it: any) => ({
+            ...it,
+            product_name: productMap[it.product_id] || "منتج غير معروف"
+          }));
+        } catch (e) {
+          p.items = [];
+        }
+      }
+    });
     res.json(payments);
   });
 
@@ -392,6 +504,9 @@ async function startServer() {
 
   // Dashboard Stats
   app.get("/api/stats", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
     const totalRevenue = db.prepare("SELECT SUM(amount) as total FROM payments").get() as any;
     const activeContracts = db.prepare("SELECT COUNT(*) as count FROM contracts WHERE status = 'active'").get() as any;
     const outstandingBalance = db.prepare("SELECT SUM(total_price - COALESCE(discount, 0) - paid_amount) as total FROM contracts WHERE status != 'completed'").get() as any;
@@ -413,6 +528,9 @@ async function startServer() {
 
   // Audit Logs
   app.get("/api/audit-logs", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
     const logs = db.prepare(`
       SELECT a.*, u.username 
       FROM audit_logs a 
@@ -420,6 +538,31 @@ async function startServer() {
       ORDER BY timestamp DESC
     `).all();
     res.json(logs);
+  });
+
+  // Settings
+  app.get("/api/settings", authenticateToken, (req, res) => {
+    const settings = db.prepare("SELECT * FROM settings").all();
+    const settingsMap = settings.reduce((acc: any, s: any) => {
+      acc[s.key] = s.value;
+      return acc;
+    }, {});
+    res.json(settingsMap);
+  });
+
+  app.post("/api/settings", authenticateToken, (req, res) => {
+    if ((req as any).user.role !== "مدير" && (req as any).user.username !== "admin") return res.status(403).json({ error: "Unauthorized" });
+    
+    const updateSetting = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+    const settings = req.body;
+    
+    db.transaction(() => {
+      for (const [key, value] of Object.entries(settings)) {
+        updateSetting.run(key, value as string);
+      }
+    })();
+    
+    res.json({ status: "ok" });
   });
 
   // Vite middleware for development

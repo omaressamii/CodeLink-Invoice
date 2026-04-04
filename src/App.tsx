@@ -4,7 +4,9 @@ import {
   LayoutDashboard, Users, Package, FileText, FileSignature, 
   Receipt, CreditCard, Key, History, LogOut, Menu, X, 
   ChevronRight, Plus, Download, Search, Filter, AlertCircle,
-  TrendingUp, Banknote, Briefcase, Clock
+  TrendingUp, Banknote, Briefcase, Clock, Printer, Calculator, CheckCircle2,
+  ShieldCheck, UserPlus, UserCog, Trash2, Edit3,
+  Settings as SettingsIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -83,20 +85,85 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 const useAuth = () => useContext(AuthContext);
 
 // --- Components ---
+const Logo = ({ size = "md", light = false, transparent = false, noShadow = false, className = "" }: { size?: "sm" | "md" | "lg" | "xl" | "2xl", light?: boolean, transparent?: boolean, noShadow?: boolean, className?: string }) => {
+  const sizes = {
+    sm: "w-8 h-8 text-xs rounded-lg",
+    md: "w-10 h-10 text-sm rounded-xl",
+    lg: "w-16 h-16 text-xl rounded-2xl",
+    xl: "w-20 h-20 text-2xl rounded-2xl",
+    "2xl": "w-[500px] h-[500px] text-[200px] rounded-full"
+  };
+
+  const iconSizes = {
+    sm: "text-[10px]",
+    md: "text-xs",
+    lg: "text-lg",
+    xl: "text-xl",
+    "2xl": "text-[150px]"
+  };
+
+  const bgClass = transparent ? 'bg-transparent' : light ? 'bg-white border border-gray-200' : 'bg-dark-800';
+  const shadowClass = noShadow || transparent ? '' : 'shadow-xl shadow-orange-500/10';
+
+  return (
+    <div 
+      className={`${sizes[size]} ${bgClass} ${shadowClass} flex items-center justify-center relative overflow-hidden group transition-all duration-500 ${className}`}
+      style={noShadow ? { 
+        backgroundColor: transparent ? 'transparent' : light ? '#ffffff' : '#151619',
+        boxShadow: 'none',
+        filter: 'none'
+      } : {}}
+    >
+      <div className={`absolute inset-0 opacity-[0.03] font-mono ${size === '2xl' ? 'text-2xl' : 'text-[8px]'} leading-none select-none pointer-events-none p-2 break-all overflow-hidden`}>
+        {"{ } < > / ; ( ) [ ] _ * & ^ % $ # @ ! ? ".repeat(size === '2xl' ? 100 : 20)}
+      </div>
+      
+      <div className="relative flex items-center gap-0.5 z-10">
+        <span 
+          className={`text-brand-500 font-mono font-bold ${iconSizes[size]} opacity-70 group-hover:opacity-100 transition-opacity`}
+          style={noShadow ? { color: '#f97316' } : {}}
+        >
+          {"<"}
+        </span>
+        <span 
+          className={`${light || transparent ? 'text-dark-800' : 'text-white'} font-display font-black tracking-tighter uppercase`}
+          style={noShadow ? { color: light || transparent ? '#151619' : '#ffffff' } : {}}
+        >
+          CL
+        </span>
+        <span 
+          className={`text-brand-500 font-mono font-bold ${iconSizes[size]} opacity-70 group-hover:opacity-100 transition-opacity`}
+          style={noShadow ? { color: '#f97316' } : {}}
+        >
+          {"/>"}
+        </span>
+      </div>
+      
+      {!light && !transparent && !noShadow && <div className="absolute inset-0 border border-white/5 rounded-[inherit] pointer-events-none"></div>}
+    </div>
+  );
+};
+
 const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
   const menuItems = [
-    { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
-    { icon: Users, label: "العملاء", path: "/clients" },
-    { icon: Package, label: "المنتجات", path: "/products" },
-    { icon: FileText, label: "عروض الأسعار", path: "/quotations" },
-    { icon: FileSignature, label: "العقود", path: "/contracts" },
-    { icon: CreditCard, label: "المدفوعات", path: "/payments" },
-    { icon: Key, label: "التراخيص", path: "/licenses" },
-    ...(user?.role === "مدير" ? [{ icon: History, label: "سجل العمليات", path: "/audit-logs" }] : []),
+    { icon: LayoutDashboard, label: "لوحة التحكم", path: "/", permission: "dashboard" },
+    { icon: Users, label: "العملاء", path: "/clients", permission: "clients" },
+    { icon: Package, label: "المنتجات", path: "/products", permission: "products" },
+    { icon: FileText, label: "عروض الأسعار", path: "/quotations", permission: "quotations" },
+    { icon: FileSignature, label: "العقود", path: "/contracts", permission: "contracts" },
+    { icon: CreditCard, label: "المدفوعات", path: "/payments", permission: "payments" },
+    { icon: Key, label: "التراخيص", path: "/licenses", permission: "licenses" },
+    { icon: History, label: "سجل العمليات", path: "/audit-logs", permission: "audit-logs" },
+    { icon: UserCog, label: "إدارة المستخدمين", path: "/users-management", permission: "users" },
+    { icon: SettingsIcon, label: "الإعدادات", path: "/settings", permission: "settings" },
   ];
+
+  const filteredMenuItems = menuItems.filter(item => 
+    user?.username === "admin" || user?.permissions?.includes(item.permission)
+  );
 
   return (
     <>
@@ -107,44 +174,54 @@ const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) =>
       />
       
       {/* Sidebar */}
-      <aside className={`fixed top-0 right-0 bottom-0 w-64 bg-[#151619] text-white z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-orange-500 rounded flex items-center justify-center font-bold text-black">CL</div>
-            <span className="text-xl font-bold tracking-tight">CodeLink</span>
+      <aside className={`fixed top-0 right-0 bottom-0 w-72 bg-dark-800 text-white z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isOpen ? "translate-x-0 shadow-2xl shadow-black/50" : "translate-x-full"}`}>
+        <div className="p-8 border-b border-white/5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Logo size="md" />
+            <span className="text-2xl font-display font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">CodeLink</span>
           </div>
-          <button onClick={toggle} className="text-white/50 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+          <button onClick={toggle} className="lg:hidden text-white/40 hover:text-white p-2 rounded-xl hover:bg-white/5 transition-all">
             <X size={20} />
           </button>
         </div>
 
-        <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
-          {menuItems.map((item) => (
+        <nav className="p-6 space-y-2 overflow-y-auto max-h-[calc(100vh-220px)] scrollbar-hide">
+          {filteredMenuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-arabic ${location.pathname === item.path ? "bg-orange-500 text-black font-medium" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+              className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 font-arabic group relative overflow-hidden ${
+                location.pathname === item.path 
+                ? "bg-brand-500 text-dark-800 font-bold shadow-lg shadow-brand-500/20" 
+                : "text-white/50 hover:bg-white/5 hover:text-white"
+              }`}
               onClick={() => window.innerWidth < 1024 && toggle()}
             >
-              <item.icon size={20} />
-              <span>{formatArabic(item.label)}</span>
+              <item.icon size={22} className={`${location.pathname === item.path ? "scale-110" : "group-hover:scale-110 transition-transform"}`} />
+              <span className="text-[15px]">{formatArabic(item.label)}</span>
+              {location.pathname === item.path && (
+                <motion.div 
+                  layoutId="active-pill"
+                  className="absolute inset-0 bg-white/10 pointer-events-none"
+                />
+              )}
             </Link>
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-[#151619]">
-          <div className="flex items-center gap-3 px-4 py-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-orange-500 font-bold">
+        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/5 bg-dark-800/80 backdrop-blur-xl">
+          <div className="flex items-center gap-4 px-4 py-3 mb-4 bg-white/5 rounded-2xl border border-white/5">
+            <div className="w-12 h-12 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500 font-display font-bold text-lg border border-brand-500/20">
               {user?.fullName?.[0]}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-medium truncate font-arabic">{formatArabic(user?.fullName)}</p>
-              <p className="text-xs text-white/40 truncate font-arabic">{formatArabic(user?.role)}</p>
+              <p className="text-sm font-bold truncate font-arabic text-white">{formatArabic(user?.fullName)}</p>
+              <p className="text-[11px] text-white/40 truncate font-arabic uppercase tracking-wider">{formatArabic(user?.role)}</p>
             </div>
           </div>
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-400/10 transition-colors font-arabic"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl text-red-400 hover:bg-red-400/10 hover:text-red-300 transition-all font-arabic font-bold border border-transparent hover:border-red-400/20"
           >
             <LogOut size={20} />
             <span>{formatArabic("تسجيل الخروج")}</span>
@@ -167,22 +244,30 @@ const Header = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
       case "/payments": return formatArabic("المدفوعات");
       case "/licenses": return formatArabic("التراخيص");
       case "/audit-logs": return formatArabic("سجل العمليات");
+      case "/settings": return formatArabic("الإعدادات");
       default: return "CodeLink";
     }
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex items-center gap-4">
-        <button onClick={toggleSidebar} className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+    <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-30">
+      <div className="flex items-center gap-6">
+        <button onClick={toggleSidebar} className="p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all duration-300 border border-transparent hover:border-brand-100">
           <Menu size={24} />
         </button>
-        <h1 className="text-lg font-bold text-gray-900 font-arabic">{getPageTitle()}</h1>
+        <div className="space-y-0.5">
+          <h1 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{getPageTitle()}</h1>
+          <div className="flex items-center gap-2 text-[11px] text-gray-400 font-arabic uppercase tracking-wider">
+            <span>CodeLink</span>
+            <ChevronRight size={10} className="rotate-180" />
+            <span className="text-brand-500 font-bold">{getPageTitle()}</span>
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-4">
-        <div className="text-left hidden sm:block">
+      <div className="flex items-center gap-6">
+        <div className="text-left hidden md:block px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-arabic mb-0.5">{formatArabic("اليوم")}</p>
-          <p className="text-xs text-gray-500 font-arabic">{format(new Date(), "EEEE, d MMMM")}</p>
+          <p className="text-xs text-gray-600 font-bold font-sans">{format(new Date(), "EEEE, d MMMM yyyy")}</p>
         </div>
       </div>
     </header>
@@ -205,18 +290,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#f8fafc] flex">
       <Sidebar isOpen={isSidebarOpen} toggle={() => setIsSidebarOpen(!isSidebarOpen)} />
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isSidebarOpen ? "lg:mr-64" : "mr-0"}`}>
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-500 ease-in-out ${isSidebarOpen ? "lg:mr-72" : "mr-0"}`}>
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="p-6 flex-1">
+        <main className="p-8 flex-1 max-w-[1600px] mx-auto w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={window.location.pathname}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             >
               {children}
             </motion.div>
@@ -254,7 +339,9 @@ const LoginPage = () => {
     <div className="min-h-screen bg-[#151619] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center font-bold text-3xl text-black mx-auto mb-4 shadow-lg shadow-orange-500/20">CL</div>
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" />
+          </div>
           <h1 className="text-3xl font-bold text-white tracking-tight font-sans">CodeLink</h1>
           <p className="text-white/40 mt-2 italic font-arabic">نظام إدارة مبيعات البرمجيات</p>
         </div>
@@ -317,91 +404,165 @@ const Dashboard = () => {
     api.getStats().then(setStats).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="animate-pulse space-y-6">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white rounded-2xl border border-gray-200" />)}
+  if (loading) return (
+    <div className="animate-pulse space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[1,2,3,4].map(i => <div key={i} className="h-32 bg-white rounded-3xl border border-gray-100" />)}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 h-[450px] bg-white rounded-3xl border border-gray-100" />
+        <div className="h-[450px] bg-white rounded-3xl border border-gray-100" />
+      </div>
     </div>
-    <div className="h-96 bg-white rounded-2xl border border-gray-200" />
-  </div>;
+  );
 
   const cards = [
-    { label: "إجمالي الإيرادات", value: `${stats.totalRevenue.toLocaleString()} ج.م`, icon: Banknote, color: "text-green-600", bg: "bg-green-50" },
-    { label: "العقود النشطة", value: stats.activeContracts, icon: Briefcase, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "حسابات مستحقة", value: `${stats.outstandingBalance.toLocaleString()} ج.م`, icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
-    { label: "النمو الشهري", value: "+12.5%", icon: TrendingUp, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "إجمالي الإيرادات", value: `${stats.totalRevenue.toLocaleString()} ج.م`, icon: Banknote, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100" },
+    { label: "العقود النشطة", value: stats.activeContracts, icon: Briefcase, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100" },
+    { label: "حسابات مستحقة", value: `${stats.outstandingBalance.toLocaleString()} ج.م`, icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100" },
+    { label: "النمو الشهري", value: "+12.5%", icon: TrendingUp, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100" },
   ];
 
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map((card, i) => (
-          <div key={i} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${card.bg} ${card.color}`}>
-                <card.icon size={24} />
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className={`bg-white p-6 rounded-[2rem] border ${card.border} shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 group cursor-default`}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className={`p-4 rounded-2xl ${card.bg} ${card.color} transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+                <card.icon size={28} />
               </div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">{card.label}</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic(card.label)}</span>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{card.value}</p>
-          </div>
+            <div className="space-y-1">
+              <p className="text-3xl font-display font-bold text-gray-900 tracking-tight">{card.value}</p>
+              <div className="flex items-center gap-1.5 text-emerald-600">
+                <TrendingUp size={14} />
+                <span className="text-[11px] font-bold font-sans">+4.5% vs last month</span>
+              </div>
+            </div>
+          </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-gray-900 font-arabic">نظرة عامة على الإيرادات</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 }}
+          className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-10">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("نظرة عامة على الإيرادات")}</h2>
+              <p className="text-sm text-gray-400 font-arabic">{formatArabic("تحليل الإيرادات الشهرية للسنة الحالية")}</p>
+            </div>
             <div className="flex gap-2">
-              <button className="px-3 py-1 text-xs font-bold bg-gray-100 rounded-full font-arabic">12 شهر</button>
+              <button className="px-5 py-2 text-xs font-bold bg-gray-50 text-gray-600 rounded-full font-arabic border border-gray-100 hover:bg-gray-100 transition-colors">12 شهر</button>
             </div>
           </div>
           <div className="h-80 min-h-[320px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={stats.monthlyIncome.reverse()}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', textAlign: 'right' }}
+                <defs>
+                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} 
+                  dy={10}
                 />
-                <Line type="monotone" dataKey="total" stroke="#f97316" strokeWidth={3} dot={{ r: 4, fill: '#f97316' }} activeDot={{ r: 6 }} />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 500 }} 
+                  dx={-10}
+                />
+                <Tooltip 
+                  cursor={{ stroke: '#f1f5f9', strokeWidth: 2 }}
+                  contentStyle={{ 
+                    borderRadius: '20px', 
+                    border: 'none', 
+                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', 
+                    textAlign: 'right',
+                    padding: '12px 16px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="total" 
+                  stroke="#f97316" 
+                  strokeWidth={4} 
+                  dot={{ r: 6, fill: '#fff', stroke: '#f97316', strokeWidth: 3 }} 
+                  activeDot={{ r: 8, strokeWidth: 0, fill: '#f97316' }} 
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-900 font-arabic mb-8">إجراءات سريعة</h2>
-          <div className="space-y-4">
-            <Link to="/quotations" className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-orange-50 transition-colors group">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm group-hover:text-orange-500">
-                  <Plus size={20} />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+          className="bg-dark-800 p-10 rounded-[2.5rem] shadow-2xl shadow-black/20 text-white relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+          <div className="relative z-10">
+            <h2 className="text-2xl font-display font-bold mb-10 tracking-tight">{formatArabic("إجراءات سريعة")}</h2>
+            <div className="space-y-4">
+              <Link to="/quotations" className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-brand-500 hover:text-dark-800 transition-all duration-500 group border border-white/5 hover:border-brand-400">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/10 rounded-xl group-hover:bg-dark-800/10 transition-colors">
+                    <Plus size={22} />
+                  </div>
+                  <span className="font-bold text-[15px] font-arabic">{formatArabic("عرض سعر جديد")}</span>
                 </div>
-                <span className="font-bold text-gray-700 font-arabic">عرض سعر جديد</span>
-              </div>
-              <ChevronRight size={16} className="text-gray-400 rotate-180" />
-            </Link>
-            <Link to="/clients" className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-orange-50 transition-colors group">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm group-hover:text-orange-500">
-                  <Users size={20} />
+                <ChevronRight size={18} className="text-white/30 group-hover:text-dark-800 rotate-180 transition-transform group-hover:-translate-x-1" />
+              </Link>
+              <Link to="/clients" className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-brand-500 hover:text-dark-800 transition-all duration-500 group border border-white/5 hover:border-brand-400">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/10 rounded-xl group-hover:bg-dark-800/10 transition-colors">
+                    <Users size={22} />
+                  </div>
+                  <span className="font-bold text-[15px] font-arabic">{formatArabic("إضافة عميل")}</span>
                 </div>
-                <span className="font-bold text-gray-700 font-arabic">إضافة عميل</span>
-              </div>
-              <ChevronRight size={16} className="text-gray-400 rotate-180" />
-            </Link>
-            <Link to="/payments" className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-orange-50 transition-colors group">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm group-hover:text-orange-500">
-                  <CreditCard size={20} />
+                <ChevronRight size={18} className="text-white/30 group-hover:text-dark-800 rotate-180 transition-transform group-hover:-translate-x-1" />
+              </Link>
+              <Link to="/payments" className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-brand-500 hover:text-dark-800 transition-all duration-500 group border border-white/5 hover:border-brand-400">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/10 rounded-xl group-hover:bg-dark-800/10 transition-colors">
+                    <CreditCard size={22} />
+                  </div>
+                  <span className="font-bold text-[15px] font-arabic">{formatArabic("تسجيل دفعة")}</span>
                 </div>
-                <span className="font-bold text-gray-700 font-arabic">تسجيل دفعة</span>
+                <ChevronRight size={18} className="text-white/30 group-hover:text-dark-800 rotate-180 transition-transform group-hover:-translate-x-1" />
+              </Link>
+            </div>
+            
+            <div className="mt-12 p-6 bg-brand-500/10 rounded-3xl border border-brand-500/20">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle size={20} className="text-brand-500" />
+                <span className="text-sm font-bold font-arabic text-brand-500">{formatArabic("تنبيه النظام")}</span>
               </div>
-              <ChevronRight size={16} className="text-gray-400 rotate-180" />
-            </Link>
+              <p className="text-xs text-white/60 font-arabic leading-relaxed">
+                {formatArabic("هناك 3 عقود تنتهي صلاحيتها خلال هذا الأسبوع. يرجى مراجعة قسم العقود لاتخاذ الإجراء اللازم.")}
+              </p>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -437,136 +598,166 @@ const Clients = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="relative w-72">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80 group">
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-500 transition-colors" size={18} />
           <input 
             type="text" 
             placeholder="البحث عن العملاء..." 
-            className="w-full pr-10 pl-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-right"
+            className="w-full pr-12 pl-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic shadow-sm"
           />
         </div>
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#151619] text-white rounded-xl hover:bg-black transition-all font-medium"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-dark-800 text-white rounded-2xl hover:bg-black transition-all font-bold shadow-lg shadow-black/10 active:scale-95"
         >
           <Plus size={20} />
-          <span className="font-arabic">إضافة عميل</span>
+          <span className="font-arabic">{formatArabic("إضافة عميل جديد")}</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-        <table className="w-full text-right border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الشركة</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المسؤول</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">معلومات التواصل</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الحالة</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic text-left">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              [1,2,3].map(i => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-6 py-8 bg-gray-50/50"></td></tr>)
-            ) : clients.map((client) => (
-              <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="font-bold text-gray-900 font-arabic">{formatArabic(client.company_name)}</div>
-                  <div className="text-xs text-gray-400 truncate max-w-[200px] font-arabic">{formatArabic(client.address)}</div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">{formatArabic(client.contact_person)}</td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900">{client.email}</div>
-                  <div className="text-xs text-gray-500">{client.phone}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-arabic ${
-                    client.status === 'active' ? 'bg-green-100 text-green-700' : 
-                    client.status === 'inactive' ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {client.status === 'active' ? 'نشط' : client.status === 'inactive' ? 'غير نشط' : client.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-left">
-                  <button className="text-gray-400 hover:text-orange-500 transition-colors">
-                    <ChevronRight size={20} className="rotate-180" />
-                  </button>
-                </td>
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("الشركة")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("المسؤول")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("معلومات التواصل")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("الحالة")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic text-left">{formatArabic("الإجراءات")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                [1,2,3,4].map(i => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={5} className="px-8 py-8">
+                      <div className="h-4 bg-gray-100 rounded-full w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-50 rounded-full w-1/2" />
+                    </td>
+                  </tr>
+                ))
+              ) : clients.map((client) => (
+                <tr key={client.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="font-bold text-gray-900 font-arabic text-base group-hover:text-brand-600 transition-colors">{formatArabic(client.company_name)}</div>
+                    <div className="text-xs text-gray-400 truncate max-w-[250px] font-arabic mt-1">{formatArabic(client.address)}</div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
+                        {client.contact_person?.[0]}
+                      </div>
+                      <span className="text-sm font-bold text-gray-700 font-arabic">{formatArabic(client.contact_person)}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="text-sm font-sans font-medium text-gray-900">{client.email}</div>
+                    <div className="text-xs font-sans text-gray-400 mt-1">{client.phone}</div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-arabic ${
+                      client.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                      client.status === 'inactive' ? 'bg-gray-50 text-gray-500 border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${client.status === 'active' ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                      {formatArabic(client.status === 'active' ? 'نشط' : client.status === 'inactive' ? 'غير نشط' : client.status)}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 text-left">
+                    <button className="p-2 text-gray-300 hover:text-brand-500 hover:bg-brand-50 rounded-xl transition-all duration-300">
+                      <ChevronRight size={20} className="rotate-180" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 font-arabic">إضافة عميل جديد</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">اسم الشركة</label>
-                  <input 
-                    type="text" required
-                    value={formData.company_name}
-                    onChange={e => setFormData({...formData, company_name: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  />
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowModal(false)}
+              className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl relative z-10 border border-gray-100"
+            >
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("إضافة عميل جديد")}</h2>
+                  <p className="text-sm text-gray-400 font-arabic">{formatArabic("أدخل بيانات العميل لإضافته إلى النظام")}</p>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">الشخص المسؤول</label>
-                  <input 
-                    type="text" required
-                    value={formData.contact_person}
-                    onChange={e => setFormData({...formData, contact_person: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">الهاتف</label>
-                  <input 
-                    type="text" required
-                    value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">البريد الإلكتروني</label>
-                  <input 
-                    type="email" required
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">العنوان</label>
-                  <textarea 
-                    required
-                    value={formData.address}
-                    onChange={e => setFormData({...formData, address: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 h-24 text-right"
-                  />
-                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all"><X size={24} /></button>
               </div>
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
-                <button type="submit" className="flex-1 py-3 bg-orange-500 text-black font-bold rounded-xl hover:bg-orange-600 transition-all font-arabic">حفظ العميل</button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
+              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("اسم الشركة")}</label>
+                    <input 
+                      type="text" required
+                      value={formData.company_name}
+                      onChange={e => setFormData({...formData, company_name: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("الشخص المسؤول")}</label>
+                    <input 
+                      type="text" required
+                      value={formData.contact_person}
+                      onChange={e => setFormData({...formData, contact_person: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("رقم الهاتف")}</label>
+                    <input 
+                      type="text" required
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-sans"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("البريد الإلكتروني")}</label>
+                    <input 
+                      type="email" required
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-sans"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("العنوان")}</label>
+                    <textarea 
+                      required
+                      value={formData.address}
+                      onChange={e => setFormData({...formData, address: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 h-28 text-right transition-all font-arabic resize-none"
+                    />
+                  </div>
+                </div>
+                <div className="pt-4 flex gap-4">
+                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all font-arabic">{formatArabic("إلغاء")}</button>
+                  <button type="submit" className="flex-1 py-4 bg-brand-500 text-dark-800 font-bold rounded-2xl hover:bg-brand-600 transition-all font-arabic shadow-lg shadow-brand-500/20">{formatArabic("حفظ العميل")}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -625,111 +816,137 @@ const Products = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 font-arabic">منتجات البرمجيات</h2>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("منتجات البرمجيات")}</h2>
+          <p className="text-sm text-gray-400 font-arabic">{formatArabic("إدارة وتتبع جميع الحلول البرمجية المتاحة")}</p>
+        </div>
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#151619] text-white rounded-xl hover:bg-black transition-all font-bold"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-dark-800 text-white rounded-2xl hover:bg-black transition-all font-bold shadow-lg shadow-black/10 active:scale-95"
         >
           <Plus size={20} />
-          <span>إضافة منتج</span>
+          <span className="font-arabic">{formatArabic("إضافة منتج جديد")}</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {loading ? (
-          [1,2,3].map(i => <div key={i} className="h-48 bg-white rounded-2xl border border-gray-200 animate-pulse" />)
-        ) : products.map((product) => (
-          <div key={product.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4">
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                product.type === 'web' ? 'bg-blue-100 text-blue-700' : 
-                product.type === 'desktop' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'
+          [1,2,3,4,5,6].map(i => <div key={i} className="h-64 bg-white rounded-[2.5rem] border border-gray-100 animate-pulse" />)
+        ) : products.map((product, i) => (
+          <motion.div 
+            key={product.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.05 }}
+            className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-500 relative overflow-hidden group cursor-default"
+          >
+            <div className="absolute top-0 right-0 p-6">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                product.type === 'web' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 
+                product.type === 'desktop' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
               }`}>
-                {product.type === 'web' ? 'ويب' : product.type === 'desktop' ? 'ديسك توب' : 'موبايل'}
+                <div className={`w-1.5 h-1.5 rounded-full ${product.type === 'web' ? 'bg-blue-500' : product.type === 'desktop' ? 'bg-indigo-500' : 'bg-amber-500'}`} />
+                {formatArabic(product.type === 'web' ? 'ويب' : product.type === 'desktop' ? 'ديسك توب' : 'موبايل')}
               </span>
             </div>
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-900 mb-1 font-arabic">{formatArabic(product.name)}</h3>
-              <p className="text-sm text-gray-500 font-arabic">{product.license_type === 'lifetime' ? 'ترخيص مدى الحياة' : 'نظام اشتراك'}</p>
-            </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1 font-arabic">السعر</p>
-                <p className="text-2xl font-bold text-gray-900">{product.price.toLocaleString()} ج.م</p>
+            <div className="mb-8 mt-4">
+              <h3 className="text-2xl font-display font-bold text-gray-900 mb-2 group-hover:text-brand-600 transition-colors">{formatArabic(product.name)}</h3>
+              <div className="flex items-center gap-2 text-gray-400">
+                <Key size={14} />
+                <span className="text-xs font-arabic font-medium">{formatArabic(product.license_type === 'lifetime' ? 'ترخيص مدى الحياة' : 'نظام اشتراك شهري')}</span>
               </div>
-              <button className="p-2 bg-gray-50 rounded-lg text-gray-400 hover:text-orange-500 transition-colors">
-                <ChevronRight size={20} className="rotate-180" />
+            </div>
+            <div className="flex items-end justify-between pt-6 border-t border-gray-50">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("السعر الأساسي")}</p>
+                <p className="text-3xl font-display font-bold text-gray-900 tracking-tight">{product.price.toLocaleString()} <span className="text-sm font-arabic text-gray-400 font-normal">ج.م</span></p>
+              </div>
+              <button className="p-3 bg-gray-50 rounded-2xl text-gray-300 hover:text-brand-500 hover:bg-brand-50 transition-all duration-300">
+                <ChevronRight size={22} className="rotate-180" />
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 font-arabic">إضافة منتج جديد</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">اسم المنتج</label>
-                <input 
-                  type="text" required
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">النوع</label>
-                  <select 
-                    value={formData.type}
-                    onChange={e => setFormData({...formData, type: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  >
-                    <option value="web">ويب</option>
-                    <option value="desktop">ديسك توب</option>
-                    <option value="mobile">موبايل</option>
-                  </select>
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowModal(false)}
+              className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative z-10 border border-gray-100"
+            >
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("إضافة منتج جديد")}</h2>
+                  <p className="text-sm text-gray-400 font-arabic">{formatArabic("أدخل تفاصيل المنتج البرمجي الجديد")}</p>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">نوع الترخيص</label>
-                  <select 
-                    value={formData.license_type}
-                    onChange={e => setFormData({...formData, license_type: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  >
-                    <option value="subscription">اشتراك</option>
-                    <option value="lifetime">مدى الحياة</option>
-                  </select>
+                <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all"><X size={24} /></button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("اسم المنتج")}</label>
+                  <input 
+                    type="text" required
+                    value={formData.name}
+                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic"
+                  />
                 </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">السعر الأساسي (ج.م)</label>
-                <input 
-                  type="number" required step="0.01"
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                />
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
-                <button type="submit" className="flex-1 py-3 bg-orange-500 text-black font-bold rounded-xl hover:bg-orange-600 transition-all font-arabic">حفظ المنتج</button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("النوع")}</label>
+                    <select 
+                      value={formData.type}
+                      onChange={e => setFormData({...formData, type: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic appearance-none"
+                    >
+                      <option value="web">ويب</option>
+                      <option value="desktop">ديسك توب</option>
+                      <option value="mobile">موبايل</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("نوع الترخيص")}</label>
+                    <select 
+                      value={formData.license_type}
+                      onChange={e => setFormData({...formData, license_type: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic appearance-none"
+                    >
+                      <option value="subscription">اشتراك</option>
+                      <option value="lifetime">مدى الحياة</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("السعر (ج.م)")}</label>
+                  <input 
+                    type="number" required
+                    value={formData.price}
+                    onChange={e => setFormData({...formData, price: e.target.value})}
+                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-sans"
+                  />
+                </div>
+                <div className="pt-4 flex gap-4">
+                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all font-arabic">{formatArabic("إلغاء")}</button>
+                  <button type="submit" className="flex-1 py-4 bg-brand-500 text-dark-800 font-bold rounded-2xl hover:bg-brand-600 transition-all font-arabic shadow-lg shadow-brand-500/20">{formatArabic("حفظ المنتج")}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -743,21 +960,25 @@ const Quotations = () => {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ 
     client_id: "", 
-    items: [{ product_id: "", price: "" }],
+    items: [{ product_id: "", price: "", discount: "0" }],
     notes: ""
   });
 
   const calculateTotal = (items: any[]) => {
-    return items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+    return items.reduce((sum, item) => {
+      const price = parseFloat(item.price) || 0;
+      const discount = parseFloat(item.discount) || 0;
+      return sum + (price - discount);
+    }, 0);
   };
 
   const addItem = () => {
-    setFormData({ ...formData, items: [...formData.items, { product_id: "", price: "" }] });
+    setFormData({ ...formData, items: [...formData.items, { product_id: "", price: "", discount: "0" }] });
   };
 
   const removeItem = (index: number) => {
     const newItems = formData.items.filter((_, i) => i !== index);
-    setFormData({ ...formData, items: newItems.length ? newItems : [{ product_id: "", price: "" }] });
+    setFormData({ ...formData, items: newItems.length ? newItems : [{ product_id: "", price: "", discount: "0" }] });
   };
 
   const updateItem = (index: number, field: string, value: string) => {
@@ -796,12 +1017,16 @@ const Quotations = () => {
       const total_price = calculateTotal(formData.items);
       await api.createQuotation({ 
         client_id: formData.client_id,
-        items: formData.items.map(it => ({ ...it, price: parseFloat(it.price) })),
+        items: formData.items.map(it => ({ 
+          ...it, 
+          price: parseFloat(it.price),
+          discount: parseFloat(it.discount || "0")
+        })),
         total_price,
         notes: formData.notes
       });
       setShowModal(false);
-      setFormData({ client_id: "", items: [{ product_id: "", price: "" }], notes: "" });
+      setFormData({ client_id: "", items: [{ product_id: "", price: "", discount: "0" }], notes: "" });
       fetchData();
       notify("تم إنشاء عرض السعر بنجاح!");
     } catch (err: any) {
@@ -831,253 +1056,302 @@ const Quotations = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 font-arabic">عروض الأسعار</h2>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("عروض الأسعار")}</h2>
+          <p className="text-sm text-gray-400 font-arabic">{formatArabic("إدارة عروض الأسعار المقترحة للعملاء")}</p>
+        </div>
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[#151619] text-white rounded-xl hover:bg-black transition-all font-bold"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-dark-800 text-white rounded-2xl hover:bg-black transition-all font-bold shadow-lg shadow-black/10 active:scale-95"
         >
           <Plus size={20} />
-          <span>عرض سعر جديد</span>
+          <span className="font-arabic">{formatArabic("عرض سعر جديد")}</span>
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-        <table className="w-full text-right border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">العميل</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المنتج</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">إجمالي السعر</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">ملاحظات</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الحالة</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-left font-arabic">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              [1,2,3].map(i => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-6 py-8 bg-gray-50/50"></td></tr>)
-            ) : quotations.map((q) => (
-              <tr key={q.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-bold text-gray-900 font-arabic">{formatArabic(q.company_name)}</td>
-                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">
-                  {q.items && q.items.length > 0 ? (
-                    <div className="space-y-1">
-                      {q.items.map((it: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                          <span>{formatArabic(it.product_name)}</span>
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("العميل")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("المنتجات")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("إجمالي السعر")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("الحالة")}</th>
+                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic text-left">{formatArabic("الإجراءات")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                [1,2,3,4].map(i => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-8 py-8 bg-gray-50/10"></td></tr>)
+              ) : quotations.map((q) => (
+                <tr key={q.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="font-bold text-gray-900 font-arabic text-base group-hover:text-brand-600 transition-colors">{formatArabic(q.company_name)}</div>
+                    <div className="text-[10px] text-gray-400 font-sans mt-1">ID: #{q.id}</div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="space-y-3">
+                      {q.items?.map((it: any, idx: number) => (
+                        <div key={idx} className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
+                            <span className="text-sm font-bold text-gray-700 font-arabic">{formatArabic(it.product_name)}</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400 mr-3.5 font-sans">
+                            {it.price.toLocaleString()} ج.م 
+                            {it.discount > 0 && <span className="text-red-500 font-bold mr-2">(-{it.discount.toLocaleString()} ج.م)</span>}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    formatArabic(q.product_name)
-                  )}
-                </td>
-                <td className="px-6 py-4 font-bold text-gray-900">{q.total_price.toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 text-sm text-gray-500 font-arabic max-w-xs truncate" title={q.notes}>{formatArabic(q.notes)}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    q.status === 'pending' ? 'bg-orange-100 text-orange-700' : 
-                    q.status === 'converted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {q.status === 'pending' ? 'قيد الانتظار' : q.status === 'converted' ? 'تم التحويل' : 'ملغي'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-left">
-                  {q.status === 'pending' && (
-                    <button 
-                      onClick={() => { setSelectedQuotation(q); setShowConvertModal(true); }}
-                      className="text-xs font-bold text-orange-500 hover:text-orange-600 uppercase tracking-widest font-arabic"
-                    >
-                      تحويل إلى عقد
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {showConvertModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 font-arabic">تحويل إلى عقد</h2>
-              <button onClick={() => setShowConvertModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleConvert} className="p-6 space-y-4">
-              <div className="bg-gray-50 p-4 rounded-xl mb-4">
-                <p className="text-xs text-gray-400 uppercase font-bold mb-1 font-arabic">تفاصيل عرض السعر</p>
-                <p className="font-bold text-gray-900">{selectedQuotation?.company_name} - {selectedQuotation?.product_name}</p>
-                <p className="text-sm text-gray-500 mt-1 font-arabic">السعر الأساسي: {selectedQuotation?.total_price.toLocaleString()} ج.م</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">المدة (أشهر)</label>
-                  <input 
-                    type="number" required
-                    value={convertData.duration_months}
-                    onChange={e => setConvertData({...convertData, duration_months: parseInt(e.target.value)})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">نظام الدفع</label>
-                  <select 
-                    value={convertData.payment_plan}
-                    onChange={e => setConvertData({...convertData, payment_plan: e.target.value})}
-                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  >
-                    <option value="installments">أقساط</option>
-                    <option value="cash">كاش</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">مبلغ الخصم (ج.م)</label>
-                <input 
-                  type="number" required step="0.01"
-                  value={convertData.discount}
-                  onChange={e => setConvertData({...convertData, discount: parseFloat(e.target.value)})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">ملاحظات</label>
-                <textarea 
-                  value={convertData.notes}
-                  onChange={e => setConvertData({...convertData, notes: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  rows={2}
-                />
-              </div>
-              <div className="bg-orange-50 p-4 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-bold text-orange-800 font-arabic">قيمة العقد الصافية:</span>
-                  <span className="text-lg font-bold text-orange-900">
-                    {(selectedQuotation?.total_price - (convertData.discount || 0)).toLocaleString()} ج.م
-                  </span>
-                </div>
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setShowConvertModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
-                <button type="submit" className="flex-1 py-3 bg-orange-500 text-black font-bold rounded-xl hover:bg-orange-600 transition-all font-arabic">إنشاء العقد</button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 font-arabic">عرض سعر جديد</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">العميل</label>
-                <select 
-                  required
-                  value={formData.client_id}
-                  onChange={e => setFormData({...formData, client_id: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                >
-                  <option value="">اختر العميل</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-                </select>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-gray-400 uppercase font-arabic">المنتجات</label>
-                  <button 
-                    type="button"
-                    onClick={addItem}
-                    className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 font-arabic"
-                  >
-                    <Plus size={14} />
-                    <span>إضافة منتج</span>
-                  </button>
-                </div>
-
-                {formData.items.map((item, index) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-3 relative">
-                    {formData.items.length > 1 && (
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="text-lg font-display font-bold text-gray-900">{q.total_price.toLocaleString()} <span className="text-xs font-arabic text-gray-400 font-normal">ج.م</span></div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-arabic ${
+                      q.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 
+                      q.status === 'converted' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${q.status === 'pending' ? 'bg-amber-500' : q.status === 'converted' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      {formatArabic(q.status === 'pending' ? 'قيد الانتظار' : q.status === 'converted' ? 'تم التحويل' : 'ملغي')}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 text-left">
+                    {q.status === 'pending' && (
                       <button 
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="absolute top-2 left-2 text-gray-400 hover:text-red-500"
+                        onClick={() => { setSelectedQuotation(q); setShowConvertModal(true); }}
+                        className="px-4 py-2 bg-brand-50 text-brand-600 text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-brand-500 hover:text-dark-800 transition-all font-arabic"
                       >
-                        <X size={16} />
+                        {formatArabic("تحويل إلى عقد")}
                       </button>
                     )}
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 font-arabic">المنتج</label>
-                        <select 
-                          required
-                          value={item.product_id}
-                          onChange={e => updateItem(index, 'product_id', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm"
-                        >
-                          <option value="">اختر المنتج</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 font-arabic">السعر (ج.م)</label>
-                        <input 
-                          type="number" required step="0.01"
-                          value={item.price}
-                          onChange={e => updateItem(index, 'price', e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm text-right"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-orange-50 p-4 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-bold text-orange-800 font-arabic">إجمالي السعر:</span>
-                  <span className="text-lg font-bold text-orange-900">
-                    {calculateTotal(formData.items).toLocaleString()} ج.م
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">ملاحظات</label>
-                <textarea 
-                  value={formData.notes}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  rows={2}
-                />
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
-                <button type="submit" className="flex-1 py-3 bg-orange-500 text-black font-bold rounded-xl hover:bg-orange-600 transition-all font-arabic">إنشاء عرض السعر</button>
-              </div>
-            </form>
-          </motion.div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
+
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowModal(false)}
+              className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl relative z-10 border border-gray-100"
+            >
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("عرض سعر جديد")}</h2>
+                  <p className="text-sm text-gray-400 font-arabic">{formatArabic("قم بإضافة المنتجات والخصومات لكل منتج")}</p>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all"><X size={24} /></button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("العميل")}</label>
+                  <select 
+                    required
+                    value={formData.client_id}
+                    onChange={e => setFormData({...formData, client_id: e.target.value})}
+                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic appearance-none"
+                  >
+                    <option value="">{formatArabic("اختر العميل")}</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("المنتجات المختارة")}</label>
+                    <button 
+                      type="button"
+                      onClick={addItem}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-brand-600 hover:text-brand-700 uppercase tracking-widest font-arabic bg-brand-50 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Plus size={14} />
+                      <span>{formatArabic("إضافة منتج")}</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {formData.items.map((item, index) => (
+                      <div key={index} className="p-6 bg-gray-50/50 rounded-3xl border border-gray-100 space-y-4 relative group">
+                        {formData.items.length > 1 && (
+                          <button 
+                            type="button"
+                            onClick={() => removeItem(index)}
+                            className="absolute top-4 left-4 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("المنتج")}</label>
+                            <select 
+                              required
+                              value={item.product_id}
+                              onChange={e => updateItem(index, 'product_id', e.target.value)}
+                              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right text-sm font-arabic appearance-none"
+                            >
+                              <option value="">{formatArabic("اختر المنتج")}</option>
+                              {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("السعر")}</label>
+                              <input 
+                                type="number" required step="0.01"
+                                value={item.price}
+                                onChange={e => updateItem(index, 'price', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right text-sm font-sans"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("الخصم")}</label>
+                              <input 
+                                type="number" required step="0.01"
+                                value={item.discount}
+                                onChange={e => updateItem(index, 'discount', e.target.value)}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right text-sm font-sans text-red-500 font-bold"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-dark-800 rounded-3xl text-white flex items-center justify-between shadow-xl shadow-dark-800/20">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] font-arabic">{formatArabic("إجمالي عرض السعر")}</p>
+                    <p className="text-3xl font-display font-bold">{calculateTotal(formData.items).toLocaleString()} <span className="text-sm font-arabic font-normal opacity-60">ج.م</span></p>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center">
+                    <Calculator className="text-brand-500" size={24} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("ملاحظات إضافية")}</label>
+                  <textarea 
+                    value={formData.notes}
+                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 h-24 text-right transition-all font-arabic resize-none"
+                    placeholder={formatArabic("أضف أي ملاحظات أو شروط خاصة هنا...")}
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all font-arabic">{formatArabic("إلغاء")}</button>
+                  <button type="submit" className="flex-1 py-4 bg-brand-500 text-dark-800 font-bold rounded-2xl hover:bg-brand-600 transition-all font-arabic shadow-lg shadow-brand-500/20">{formatArabic("إنشاء عرض السعر")}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showConvertModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConvertModal(false)}
+              className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl relative z-10 border border-gray-100"
+            >
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("تحويل إلى عقد")}</h2>
+                  <p className="text-sm text-gray-400 font-arabic">{formatArabic("تأكيد تحويل عرض السعر إلى عقد رسمي")}</p>
+                </div>
+                <button onClick={() => setShowConvertModal(false)} className="p-2 text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all"><X size={24} /></button>
+              </div>
+              <form onSubmit={handleConvert} className="p-8 space-y-6">
+                <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("تفاصيل العميل")}</p>
+                  <p className="font-bold text-gray-900 text-lg font-arabic">{formatArabic(selectedQuotation?.company_name)}</p>
+                  <p className="text-sm text-brand-600 font-bold">{selectedQuotation?.total_price.toLocaleString()} ج.م</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("المدة (أشهر)")}</label>
+                    <input 
+                      type="number" required
+                      value={convertData.duration_months}
+                      onChange={e => setConvertData({...convertData, duration_months: parseInt(e.target.value)})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-sans"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("نظام الدفع")}</label>
+                    <select 
+                      value={convertData.payment_plan}
+                      onChange={e => setConvertData({...convertData, payment_plan: e.target.value})}
+                      className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-arabic appearance-none"
+                    >
+                      <option value="installments">{formatArabic("أقساط")}</option>
+                      <option value="cash">{formatArabic("كاش")}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("خصم إضافي (ج.م)")}</label>
+                  <input 
+                    type="number" required step="0.01"
+                    value={convertData.discount}
+                    onChange={e => setConvertData({...convertData, discount: parseFloat(e.target.value)})}
+                    className="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 text-right transition-all font-sans text-red-500 font-bold"
+                  />
+                </div>
+
+                <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest font-arabic">{formatArabic("صافي قيمة العقد")}</p>
+                    <p className="text-2xl font-display font-bold text-emerald-700">
+                      {(selectedQuotation?.total_price - (convertData.discount || 0)).toLocaleString()} <span className="text-xs font-arabic font-normal opacity-60">ج.م</span>
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <CheckCircle2 className="text-emerald-600" size={20} />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <button type="button" onClick={() => setShowConvertModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all font-arabic">{formatArabic("إلغاء")}</button>
+                  <button type="submit" className="flex-1 py-4 bg-emerald-500 text-white font-bold rounded-2xl hover:bg-emerald-600 transition-all font-arabic shadow-lg shadow-emerald-500/20">{formatArabic("إنشاء العقد")}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1091,6 +1365,7 @@ const Contracts = () => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("تحويل بنكي");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchContracts = () => {
     setLoading(true);
@@ -1120,209 +1395,277 @@ const Contracts = () => {
     }
   };
 
+  const filteredContracts = contracts.filter(c => 
+    c.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.product_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 font-arabic">العقود النشطة</h2>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-        <table className="w-full text-right border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">العميل</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المنتج</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الإجمالي</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الخصم</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الصافي</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المدفوع</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المتبقي</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">ملاحظات</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الحالة</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-left font-arabic">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              [1,2,3].map(i => <tr key={i} className="animate-pulse"><td colSpan={9} className="px-6 py-8 bg-gray-50/50"></td></tr>)
-            ) : contracts.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 font-bold text-gray-900 font-arabic">{formatArabic(c.company_name)}</td>
-                <td className="px-6 py-4 text-sm text-gray-600 font-arabic">
-                  {c.items && c.items.length > 0 ? (
-                    <div className="space-y-1">
-                      {c.items.map((it: any, idx: number) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                          <span>{formatArabic(it.product_name)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    formatArabic(c.product_name)
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-400">{c.total_price.toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 text-sm text-orange-500">{c.discount?.toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 font-bold text-gray-900">{(c.total_price - (c.discount || 0)).toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 text-sm text-green-600">{c.paid_amount.toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 text-sm text-red-500 font-bold">{(c.total_price - (c.discount || 0) - c.paid_amount).toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 text-sm text-gray-500 font-arabic max-w-xs truncate" title={c.notes}>{formatArabic(c.notes)}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    c.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                  }`}>
-                    {c.status === 'completed' ? 'مكتمل' : 'نشط'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-left">
-                  {c.status !== 'completed' && (
-                    <button 
-                      onClick={() => { setSelectedContract(c); setPaymentAmount((c.total_price - (c.discount || 0) - c.paid_amount).toString()); setShowPaymentModal(true); }}
-                      className="text-xs font-bold text-orange-500 hover:text-orange-600 uppercase tracking-widest font-arabic"
-                    >
-                      تسجيل دفعة
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
-          >
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 font-arabic">تسجيل دفعة</h2>
-              <button onClick={() => setShowPaymentModal(false)} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
-            </div>
-            <form onSubmit={handlePayment} className="p-6 space-y-4">
-              <div className="bg-gray-50 p-4 rounded-xl mb-4">
-                <p className="text-xs text-gray-400 uppercase font-bold mb-1 font-arabic">العقد</p>
-                <p className="font-bold text-gray-900">{selectedContract?.company_name} - {selectedContract?.product_name}</p>
-                <p className="text-sm text-gray-500 mt-1 font-arabic">المتبقي: {(selectedContract?.total_price - (selectedContract?.discount || 0) - selectedContract?.paid_amount).toLocaleString()} ج.م</p>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">مبلغ الدفعة (ج.م)</label>
-                <input 
-                  type="number" required step="0.01"
-                  value={paymentAmount}
-                  onChange={e => setPaymentAmount(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">طريقة الدفع</label>
-                <select 
-                  value={paymentMethod}
-                  onChange={e => setPaymentMethod(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                >
-                  <option value="تحويل بنكي">تحويل بنكي</option>
-                  <option value="كاش">كاش</option>
-                  <option value="شيك">شيك</option>
-                  <option value="بطاقة ائتمان">بطاقة ائتمان</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase mb-1 font-arabic">ملاحظات</label>
-                <textarea 
-                  value={paymentNotes}
-                  onChange={e => setPaymentNotes(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
-                  rows={2}
-                />
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
-                <button type="submit" className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all font-arabic">تأكيد الدفع</button>
-              </div>
-            </form>
-          </motion.div>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80 group">
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
+          <input 
+            type="text" 
+            placeholder={formatArabic("بحث في العقود...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pr-12 pl-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-arabic text-right"
+          />
         </div>
-      )}
+      </div>
+
+      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">العميل</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">المنتجات</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">المالية</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">الحالة</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest text-left font-arabic">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                [1,2,3,4].map(i => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={5} className="px-8 py-6"><div className="h-12 bg-gray-100 rounded-xl w-full"></div></td>
+                  </tr>
+                ))
+              ) : filteredContracts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                        <FileSignature size={32} />
+                      </div>
+                      <p className="text-gray-500 font-arabic">{formatArabic("لا توجد عقود حالياً")}</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredContracts.map((c) => (
+                <tr key={c.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold">
+                        {c.company_name[0]}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 font-arabic">{formatArabic(c.company_name)}</p>
+                        <p className="text-xs text-gray-400 font-sans">ID: {c.id.toString().padStart(4, '0')}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="space-y-2">
+                      {c.items && c.items.length > 0 ? (
+                        c.items.map((it: any, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                            <span className="text-sm font-bold text-gray-700 font-arabic">{formatArabic(it.product_name)}</span>
+                            {it.discount > 0 && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-bold">-{it.discount.toLocaleString()}</span>}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-sm font-bold text-gray-700 font-arabic">{formatArabic(c.product_name)}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-900">{(c.total_price - (c.discount || 0)).toLocaleString()}</span>
+                        <span className="text-[10px] text-gray-400 font-arabic">ج.م</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-green-600 font-bold">{c.paid_amount.toLocaleString()}</span>
+                        <span className="text-gray-300">/</span>
+                        <span className="text-red-500 font-bold">{(c.total_price - (c.discount || 0) - c.paid_amount).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                      c.status === 'completed' ? 'bg-green-50 text-green-700 border border-green-100' : 
+                      c.status === 'active' ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-gray-50 text-gray-700 border border-gray-100'
+                    }`}>
+                      {c.status === 'completed' ? formatArabic("مكتمل") : formatArabic("نشط")}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 text-left">
+                    {c.status !== 'completed' && (
+                      <button 
+                        onClick={() => { setSelectedContract(c); setPaymentAmount((c.total_price - (c.discount || 0) - c.paid_amount).toString()); setShowPaymentModal(true); }}
+                        className="px-4 py-2 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold hover:bg-orange-600 hover:text-white transition-all font-arabic"
+                      >
+                        تسجيل دفعة
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-dark-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-white/20"
+            >
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <h2 className="text-2xl font-bold text-gray-900 font-arabic">تسجيل دفعة</h2>
+                <button onClick={() => setShowPaymentModal(false)} className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"><X size={20} /></button>
+              </div>
+              <form onSubmit={handlePayment} className="p-8 space-y-6">
+                <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100/50">
+                  <p className="text-[10px] text-orange-600 uppercase font-black tracking-widest mb-2 font-arabic">تفاصيل العقد</p>
+                  <p className="font-bold text-gray-900 text-lg">{formatArabic(selectedContract?.company_name)}</p>
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-orange-100/50">
+                    <span className="text-xs text-gray-500 font-arabic">المبلغ المتبقي:</span>
+                    <span className="font-bold text-red-600">{(selectedContract?.total_price - (selectedContract?.discount || 0) - selectedContract?.paid_amount).toLocaleString()} ج.م</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">مبلغ الدفعة (ج.م)</label>
+                  <input 
+                    type="number" required step="0.01"
+                    value={paymentAmount}
+                    onChange={e => setPaymentAmount(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-bold text-lg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">طريقة الدفع</label>
+                  <select 
+                    value={paymentMethod}
+                    onChange={e => setPaymentMethod(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-arabic"
+                  >
+                    <option value="تحويل بنكي">تحويل بنكي</option>
+                    <option value="كاش">كاش</option>
+                    <option value="شيك">شيك</option>
+                    <option value="بطاقة ائتمان">بطاقة ائتمان</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">ملاحظات</label>
+                  <textarea 
+                    value={paymentNotes}
+                    onChange={e => setPaymentNotes(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-arabic resize-none"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <button type="button" onClick={() => setShowPaymentModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition-all font-arabic">إلغاء</button>
+                  <button type="submit" className="flex-1 py-4 bg-orange-500 text-white font-bold rounded-2xl hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all font-arabic">تأكيد الدفع</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
 const Payments = () => {
+  const { user, notify } = useAuth();
   const [payments, setPayments] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const receiptRef = React.useRef<HTMLDivElement>(null);
+  const thermalReceiptRef = React.useRef<HTMLDivElement>(null);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [isThermal, setIsThermal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    api.getPayments().then(setPayments).finally(() => setLoading(false));
+    loadData();
   }, []);
 
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [paymentsData, settingsData] = await Promise.all([
+        api.getPayments(),
+        api.getSettings()
+      ]);
+      setPayments(paymentsData);
+      setSettings(settingsData);
+    } catch (err: any) {
+      notify(err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const exportReceipt = async (payment: any) => {
-    if (selectedPayment) return; // Prevent multiple simultaneous exports
-    
+    if (selectedPayment) return;
+    setIsThermal(false);
     setSelectedPayment(payment);
     
     try {
-      // Wait for fonts to be ready
       await document.fonts.ready;
-      
-      // Small delay to ensure the hidden component is rendered with the correct data
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       if (receiptRef.current) {
         const canvas = await html2canvas(receiptRef.current, {
-          scale: 2, // Higher quality
+          scale: 2,
           useCORS: true,
           backgroundColor: "#ffffff",
           logging: false,
           onclone: (clonedDoc) => {
-            // Force all elements in the cloned document to use standard colors
-            // and ensure Arabic text rendering properties are applied.
-            // Aggressively strip oklch/oklab and shadows which cause html2canvas to fail.
             const elements = clonedDoc.querySelectorAll('*');
             elements.forEach((el: any) => {
-              const style = window.getComputedStyle(el);
-              
-              // Helper to check for unsupported colors
-              const hasUnsupportedColor = (val: string) => val.includes('oklch') || val.includes('oklab') || val.includes('okl');
+              try {
+                const style = window.getComputedStyle(el);
+                const hasUnsupportedColor = (val: string | null) => 
+                  val && (val.includes('oklch') || val.includes('oklab') || val.includes('okl('));
 
-              // Replace unsupported colors in common properties
-              if (hasUnsupportedColor(style.color)) el.style.color = '#151619';
-              if (hasUnsupportedColor(style.backgroundColor)) el.style.backgroundColor = 'transparent';
-              if (hasUnsupportedColor(style.borderColor)) el.style.borderColor = '#e5e7eb';
-              if (hasUnsupportedColor(style.outlineColor)) el.style.outlineColor = '#e5e7eb';
-              
-              // Force remove all shadows as they are a common source of oklch/oklab in TW4
-              // and often cause html2canvas to crash or throw parsing errors.
-              el.style.boxShadow = 'none';
-              el.style.textShadow = 'none';
-              el.style.filter = 'none';
-              
-              // Special case for the dark amount section
-              if (el.classList.contains('bg-[#151619]')) {
-                el.style.backgroundColor = '#151619';
-                el.style.color = '#ffffff';
-              }
-              
-              // Special case for orange text/bg
-              if (el.classList.contains('text-orange-500') || el.classList.contains('text-orange-600')) {
-                el.style.color = '#f97316';
-              }
-              if (el.classList.contains('bg-orange-500')) {
-                el.style.backgroundColor = '#f97316';
-              }
+                const colorProps = [
+                  'color', 'backgroundColor', 'borderColor', 'borderTopColor', 
+                  'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+                  'outlineColor', 'fill', 'stroke', 'stopColor', 'floodColor', 'lightingColor'
+                ];
 
-              // Ensure RTL and text rendering
-              if (el.classList.contains('font-arabic') || el.style.fontFamily.includes('Cairo')) {
-                el.style.direction = 'rtl';
-                el.style.textAlign = 'right';
-                el.style.letterSpacing = '0';
-                el.style.wordSpacing = '0';
-              }
+                colorProps.forEach(prop => {
+                  if (hasUnsupportedColor(style[prop as any])) {
+                    if (prop === 'backgroundColor') el.style.backgroundColor = 'transparent';
+                    else if (prop.includes('border')) el.style.borderColor = '#e5e7eb';
+                    else el.style[prop as any] = '#151619';
+                  }
+                });
+                
+                el.style.setProperty('box-shadow', 'none', 'important');
+                el.style.setProperty('text-shadow', 'none', 'important');
+                el.style.setProperty('filter', 'none', 'important');
+                el.style.setProperty('backdrop-filter', 'none', 'important');
+                
+                if (el.classList.contains('bg-[#151619]')) {
+                  el.style.backgroundColor = '#151619';
+                  el.style.color = '#ffffff';
+                }
+                if (el.classList.contains('text-orange-500')) el.style.color = '#f97316';
+                if (el.classList.contains('bg-orange-500')) el.style.backgroundColor = '#f97316';
+                
+                if (el.classList.contains('font-arabic') || el.style.fontFamily.includes('Cairo')) {
+                  el.style.direction = 'rtl';
+                  el.style.textAlign = 'right';
+                }
+              } catch (e) {}
             });
           }
         });
@@ -1339,188 +1682,411 @@ const Payments = () => {
     }
   };
 
+  const exportThermalReceipt = async (payment: any) => {
+    if (selectedPayment) return;
+    setIsThermal(true);
+    setSelectedPayment(payment);
+    
+    try {
+      await document.fonts.ready;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (thermalReceiptRef.current) {
+        const canvas = await html2canvas(thermalReceiptRef.current, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          onclone: (clonedDoc) => {
+            const elements = clonedDoc.querySelectorAll('*');
+            elements.forEach((el: any) => {
+              try {
+                const style = window.getComputedStyle(el);
+                const hasUnsupportedColor = (val: string | null) => 
+                  val && (val.includes('oklch') || val.includes('oklab') || val.includes('okl('));
+
+                const colorProps = [
+                  'color', 'backgroundColor', 'borderColor', 'borderTopColor', 
+                  'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+                  'outlineColor', 'fill', 'stroke', 'stopColor', 'floodColor', 'lightingColor'
+                ];
+
+                colorProps.forEach(prop => {
+                  if (hasUnsupportedColor(style[prop as any])) {
+                    if (prop === 'backgroundColor') el.style.backgroundColor = 'transparent';
+                    else if (prop.includes('border')) el.style.borderColor = '#000000';
+                    else el.style[prop as any] = '#000000';
+                  }
+                });
+
+                el.style.setProperty('box-shadow', 'none', 'important');
+                el.style.setProperty('text-shadow', 'none', 'important');
+                el.style.setProperty('filter', 'none', 'important');
+                el.style.setProperty('backdrop-filter', 'none', 'important');
+
+                if (el.classList.contains('font-arabic') || el.style.fontFamily.includes('Cairo')) {
+                  el.style.direction = 'rtl';
+                  el.style.textAlign = 'right';
+                }
+              } catch (e) {}
+            });
+          }
+        });
+        
+        const link = document.createElement('a');
+        link.download = `thermal-receipt-${payment.id}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
+        link.click();
+      }
+    } catch (err) {
+      console.error("Failed to generate thermal receipt", err);
+    } finally {
+      setSelectedPayment(null);
+    }
+  };
+
+  const filteredPayments = payments.filter(p => 
+    p.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.method.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 font-arabic">سجل المدفوعات</h2>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative w-full sm:w-80 group">
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
+          <input 
+            type="text" 
+            placeholder={formatArabic("بحث في المدفوعات...")}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pr-12 pl-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-arabic text-right"
+          />
+        </div>
       </div>
 
       {/* Hidden Receipt Template for JPG Generation */}
       <div className="fixed -left-[9999px] top-0">
         <div 
           ref={receiptRef}
-          className="w-[800px] bg-white p-16 receipt-container"
+          className="w-[800px] bg-white p-12 receipt-container relative overflow-hidden"
           style={{ 
             direction: 'rtl',
             fontFamily: "'Cairo', sans-serif",
             letterSpacing: '0',
             fontVariantLigatures: 'common-ligatures',
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            minHeight: '1100px'
           }}
         >
-          {/* Decorative Top Bar */}
-          <div className="absolute top-0 left-0 right-0 h-2 bg-orange-500"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none z-0">
+            <Logo size="2xl" transparent noShadow />
+          </div>
 
-          {/* Header Section */}
-          <div className="flex justify-between items-start mb-16 pt-4">
-            <div>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 bg-[#151619] rounded-2xl flex items-center justify-center font-bold text-3xl text-orange-500">CL</div>
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-900">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold font-arabic text-gray-900">{formatArabic("إيصال استلام نقدية")}</h1>
+                <p className="text-sm font-arabic text-gray-600">{formatArabic("رقم الإيصال:")} <span className="font-sans font-bold">RCP-{selectedPayment?.id?.toString().padStart(5, '0')}</span></p>
+                <p className="text-sm font-arabic text-gray-600">{formatArabic("التاريخ:")} <span className="font-sans font-bold">{selectedPayment && format(new Date(selectedPayment.payment_date), "yyyy/MM/dd")}</span></p>
+              </div>
+              
+              <div className="text-center px-4">
+                <h2 className="text-4xl font-bold font-arabic text-gray-900 mb-1">{formatArabic(settings.company_name)}</h2>
+                <p className="text-lg font-arabic text-gray-500">{formatArabic(settings.company_address)}</p>
+              </div>
+
+              <Logo size="xl" noShadow />
+            </div>
+
+            <div className="border-2 border-gray-200 rounded-2xl p-6 mb-8 bg-gray-50/50">
+              <h3 className="text-sm font-bold font-arabic text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">{formatArabic("بيانات العميل:")}</h3>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h1 className="text-4xl font-bold tracking-tight font-sans leading-none mb-1" style={{ color: '#151619' }}>CodeLink Software</h1>
-                  <p className="text-xs font-bold tracking-[0.3em] text-orange-600 uppercase">Premium Tech Solutions</p>
+                  <p className="text-sm font-arabic text-gray-500 mb-1">{formatArabic("الاسم:")} <span className="text-lg font-bold text-gray-900 pr-2">{formatArabic(selectedPayment?.company_name)}</span></p>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-arabic text-gray-500 mb-1">{formatArabic("طريقة الدفع:")} <span className="text-lg font-bold text-gray-900 pr-2">{formatArabic(selectedPayment?.method)}</span></p>
                 </div>
               </div>
-              <p className="text-sm font-arabic text-gray-500">{formatArabic("حلول برمجية متكاملة لإدارة الأعمال والشركات")}</p>
             </div>
-            <div className="text-left">
-              <div className="inline-block px-6 py-2 bg-[#151619] rounded-xl mb-3">
-                <h2 className="text-xl font-bold font-arabic text-white">{formatArabic("إيصال استلام نقدية")}</h2>
-              </div>
-              <p className="font-mono text-sm font-bold text-gray-400">REF: RCP-{selectedPayment?.id?.toString().padStart(5, '0')}</p>
-            </div>
-          </div>
 
-          {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-16 mb-12">
-            <div className="space-y-6">
-              <div className="border-r-4 border-orange-500 pr-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400 font-arabic">{formatArabic("العميل / السيد")}</p>
-                <p className="text-2xl font-bold font-arabic leading-tight text-[#151619]">{formatArabic(selectedPayment?.company_name)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400 font-arabic">{formatArabic("البيان")}</p>
-                <p className="text-lg font-arabic text-gray-700 leading-relaxed">{formatArabic(`سداد قسط ترخيص: ${selectedPayment?.product_name}`)}</p>
-              </div>
-            </div>
-            <div className="text-left space-y-6">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400 font-arabic">{formatArabic("تاريخ الإصدار")}</p>
-                <p className="text-xl font-bold font-sans text-[#151619]">{selectedPayment && format(new Date(selectedPayment.payment_date), "dd MMMM yyyy")}</p>
-                <p className="text-sm font-bold text-orange-600 font-sans">{selectedPayment && format(new Date(selectedPayment.payment_date), "HH:mm:ss")}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-gray-400 font-arabic">{formatArabic("طريقة الدفع")}</p>
-                <p className="text-lg font-bold font-arabic text-[#151619]">{formatArabic(selectedPayment?.method)}</p>
-              </div>
-            </div>
-          </div>
+            <table className="w-full border-collapse border-2 border-gray-900 mb-8">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border-2 border-gray-900 px-4 py-3 text-sm font-bold font-arabic">#</th>
+                  <th className="border-2 border-gray-900 px-4 py-3 text-sm font-bold font-arabic text-right">{formatArabic("الصنف")}</th>
+                  <th className="border-2 border-gray-900 px-4 py-3 text-sm font-bold font-arabic">{formatArabic("السعر")}</th>
+                  <th className="border-2 border-gray-900 px-4 py-3 text-sm font-bold font-arabic">{formatArabic("الخصم")}</th>
+                  <th className="border-2 border-gray-900 px-4 py-3 text-sm font-bold font-arabic">{formatArabic("الإجمالي")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedPayment?.items && selectedPayment.items.length > 0 ? (
+                  selectedPayment.items.map((it: any, idx: number) => (
+                    <tr key={idx}>
+                      <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans">{idx + 1}</td>
+                      <td className="border-2 border-gray-900 px-4 py-3 text-right font-arabic">{formatArabic(it.product_name)}</td>
+                      <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans">{it.price.toLocaleString()}</td>
+                      <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans text-red-600">{it.discount ? it.discount.toLocaleString() : 0}</td>
+                      <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans font-bold">{(it.price - (it.discount || 0)).toLocaleString()}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans">1</td>
+                    <td className="border-2 border-gray-900 px-4 py-3 text-right font-arabic">{formatArabic(selectedPayment?.product_name)}</td>
+                    <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans">{selectedPayment?.contract_total.toLocaleString()}</td>
+                    <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans text-red-600">{selectedPayment?.contract_discount || 0}</td>
+                    <td className="border-2 border-gray-900 px-4 py-3 text-center font-sans font-bold">{(selectedPayment?.contract_total - (selectedPayment?.contract_discount || 0)).toLocaleString()}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-          {selectedPayment?.notes && (
-            <div className="mb-12 p-6 bg-gray-50 rounded-2xl border-r-4 border-gray-200">
-              <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-gray-400 font-arabic">{formatArabic("ملاحظات إضافية")}</p>
-              <p className="text-sm font-arabic text-gray-600 leading-relaxed">{formatArabic(selectedPayment.notes)}</p>
-            </div>
-          )}
-
-          {/* Amount Section */}
-          <div className="bg-[#151619] rounded-[40px] p-12 mb-16 relative overflow-hidden">
-            {/* Decorative circles */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full"></div>
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-orange-500/10 rounded-full"></div>
-            
-            <div className="flex justify-between items-center relative z-10">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-3 text-orange-500 font-arabic">{formatArabic("المبلغ المدفوع")}</p>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-6xl font-bold font-sans text-white">{selectedPayment?.amount.toLocaleString()}</span>
-                  <span className="text-2xl font-bold font-arabic text-white/60">{formatArabic("جنيه مصري")}</span>
+            <div className="flex justify-end mb-12">
+              <div className="w-80 space-y-3">
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-sm font-arabic text-gray-500">{formatArabic("الإجمالي الفرعي")}</span>
+                  <span className="font-sans font-bold text-gray-900">{selectedPayment?.contract_total.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b-2 border-gray-900">
+                  <span className="text-lg font-bold font-arabic text-gray-900">{formatArabic("الإجمالي الكلي")}</span>
+                  <span className="text-2xl font-bold font-sans text-gray-900">{selectedPayment?.contract_total.toLocaleString()} <span className="text-sm font-arabic">{formatArabic("ج.م")}</span></span>
+                </div>
+                <div className="flex justify-between items-center text-red-600">
+                  <span className="text-sm font-bold font-arabic">{formatArabic("المبلغ المدفوع حالياً")}</span>
+                  <span className="font-sans font-bold">-{selectedPayment?.amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t-2 border-gray-900 bg-gray-100 p-3 rounded-xl">
+                  <span className="text-sm font-bold font-arabic text-gray-900">{formatArabic("المتبقي من العقد")}</span>
+                  <span className="text-lg font-bold font-sans text-red-600">{(selectedPayment?.contract_total - (selectedPayment?.contract_discount || 0) - selectedPayment?.contract_paid).toLocaleString()} <span className="text-xs font-arabic">{formatArabic("ج.م")}</span></span>
                 </div>
               </div>
+            </div>
+
+            {selectedPayment?.notes && (
+              <div className="mb-12 p-6 bg-orange-50 rounded-2xl border-r-4 border-orange-500">
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-orange-600 font-arabic">{formatArabic("ملاحظات إضافية")}</p>
+                <p className="text-sm font-arabic text-gray-700 leading-relaxed">{formatArabic(selectedPayment.notes)}</p>
+              </div>
+            )}
+
+            <div className="mt-auto pt-12 border-t border-gray-100 flex justify-between items-end">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <p className="text-xs font-arabic text-gray-500">{formatArabic("يُعتمد هذا الإيصال بختم الشركة الرسمي")}</p>
+                </div>
+                <div className="flex gap-6 text-[10px] font-bold text-gray-300 font-sans">
+                  <span>{settings.company_website}</span>
+                  <span>{settings.company_email}</span>
+                </div>
+              </div>
+              
               <div className="text-left">
-                <div className="w-36 h-36 rounded-full border-8 border-orange-500/20 flex items-center justify-center transform -rotate-12 bg-white/5 backdrop-blur-sm">
-                  <div className="text-center">
-                    <p className="text-orange-500 font-bold text-2xl font-arabic leading-none mb-1">{formatArabic("مدفوع")}</p>
-                    <p className="text-white/40 font-mono text-[10px] uppercase tracking-widest">VERIFIED</p>
-                  </div>
-                </div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 font-arabic mb-4">{formatArabic("توقيع المحاسب")}</p>
+                <div className="w-48 h-1 bg-gray-200"></div>
               </div>
-            </div>
-          </div>
-
-          {/* Financial Summary */}
-          <div className="grid grid-cols-2 gap-16">
-            <div className="space-y-6">
-              <div className="p-8 bg-gray-50 rounded-3xl border border-gray-100">
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-6 text-gray-400 font-arabic">{formatArabic("ملخص الحساب المالي")}</p>
-                <div className="space-y-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-arabic text-gray-500">{formatArabic("إجمالي قيمة العقد:")}</span>
-                    <span className="font-bold text-[#151619]">{selectedPayment?.contract_total.toLocaleString()} ج.م</span>
-                  </div>
-                  {selectedPayment?.contract_discount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="font-arabic text-gray-500">{formatArabic("إجمالي الخصومات:")}</span>
-                      <span className="font-bold text-red-500">-{selectedPayment?.contract_discount.toLocaleString()} ج.م</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm pt-4 border-t border-gray-200">
-                    <span className="font-arabic font-bold text-[#151619]">{formatArabic("الرصيد المتبقي:")}</span>
-                    <span className="font-bold text-2xl text-orange-600">{(selectedPayment?.contract_total - selectedPayment?.contract_discount - selectedPayment?.contract_paid).toLocaleString()} ج.م</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col justify-end text-left">
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 font-arabic">{formatArabic("توقيع المحاسب المعتمد")}</p>
-                <div className="h-20 w-56 border-b-2 border-[#151619]/10 mb-3 relative">
-                   {/* Placeholder for signature */}
-                   <div className="absolute bottom-2 left-4 font-serif italic text-gray-300 text-2xl opacity-50">CodeLink Accountant</div>
-                </div>
-                <p className="text-[10px] font-arabic text-gray-400 italic">{formatArabic("يُعتمد هذا الإيصال بختم الشركة الرسمي")}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-24 pt-10 border-t border-gray-100 text-center">
-            <p className="text-sm font-arabic text-gray-500 mb-4">
-              {formatArabic("شكراً لثقتكم في")} <span className="font-sans font-bold text-[#151619]">CodeLink Software</span>. {formatArabic("نتطلع لخدمتكم دائماً.")}
-            </p>
-            <div className="flex justify-center gap-12 text-[10px] font-bold uppercase tracking-[0.3em] text-gray-300">
-              <span className="hover:text-orange-500 transition-colors">WWW.CODELINK.SOFTWARE</span>
-              <span className="hover:text-orange-500 transition-colors">SUPPORT@CODELINK.SOFTWARE</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-        <table className="w-full text-right border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">التاريخ</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">العميل</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المبلغ</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الطريقة</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">ملاحظات</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest text-left font-arabic">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              [1,2,3].map(i => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-6 py-8 bg-gray-50/50"></td></tr>)
-            ) : payments.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-sm text-gray-500">{format(new Date(p.payment_date), "yyyy-MM-dd HH:mm")}</td>
-                <td className="px-6 py-4 font-bold text-gray-900 font-arabic" dir="auto">{formatArabic(p.company_name)}</td>
-                <td className="px-6 py-4 font-bold text-green-600">{p.amount.toLocaleString()} ج.م</td>
-                <td className="px-6 py-4 text-sm text-gray-600 font-arabic" dir="auto">{formatArabic(p.method)}</td>
-                <td className="px-6 py-4 text-sm text-gray-500 font-arabic max-w-xs truncate" title={p.notes}>{formatArabic(p.notes)}</td>
-                <td className="px-6 py-4 text-left">
-                  <button 
-                    onClick={() => exportReceipt(p)}
-                    className="p-2 text-gray-400 hover:text-orange-500 transition-colors"
-                    title="طباعة الإيصال"
-                  >
-                    <Download size={18} />
-                  </button>
-                </td>
+      {/* Thermal Receipt Template */}
+      <div className="fixed -left-[9999px] top-0">
+        <div 
+          ref={thermalReceiptRef}
+          className="w-[320px] bg-white p-4 thermal-receipt-container"
+          style={{ 
+            direction: 'rtl',
+            fontFamily: "'Cairo', sans-serif",
+            letterSpacing: '0',
+            backgroundColor: '#ffffff',
+            color: '#000000'
+          }}
+        >
+          <div className="flex flex-col items-center text-center mb-4">
+            <Logo size="md" className="mb-2" noShadow />
+            <h2 className="text-lg font-bold font-arabic">{formatArabic(settings.company_name)}</h2>
+            <p className="text-[10px] font-arabic text-gray-600">{formatArabic(settings.company_address)}</p>
+            <p className="text-[10px] font-sans text-gray-600">{formatArabic(`رقم الهاتف: ${settings.company_phone}`)}</p>
+            <p className="text-[10px] font-sans text-gray-600">{settings.company_website}</p>
+          </div>
+
+          <div className="border-t border-dashed border-black my-2"></div>
+          
+          <div className="text-center mb-2">
+            <h3 className="text-sm font-bold font-arabic">{formatArabic("فاتورة مبيعات")}</h3>
+            <div className="inline-block border border-black px-4 py-2 mt-1">
+              <p className="text-xs font-arabic font-bold">{formatArabic("ف-ب-")}{selectedPayment?.id}</p>
+            </div>
+          </div>
+
+          <div className="space-y-1 text-[10px] font-arabic mb-4">
+            <div className="flex justify-between">
+              <span>{formatArabic("رقم الفاتورة:")}</span>
+              <span className="font-sans">RCP-{selectedPayment?.id?.toString().padStart(5, '0')}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{formatArabic("التاريخ:")}</span>
+              <span className="font-sans">{selectedPayment && format(new Date(selectedPayment.payment_date), "yyyy/MM/dd HH:mm")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{formatArabic("الكاشير:")}</span>
+              <span className="font-bold">{formatArabic(user?.fullName || "---")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{formatArabic("العميل:")}</span>
+              <span className="font-bold">{formatArabic(selectedPayment?.company_name)}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-dashed border-black my-2"></div>
+
+          <table className="w-full text-[10px] mb-4">
+            <thead>
+              <tr className="border-b border-black">
+                <th className="text-right py-1 font-arabic">{formatArabic("الصنف")}</th>
+                <th className="text-center py-1 font-arabic">{formatArabic("سعر")}</th>
+                <th className="text-center py-1 font-arabic">{formatArabic("خصم")}</th>
+                <th className="text-left py-1 font-arabic">{formatArabic("صافي")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {selectedPayment?.items && selectedPayment.items.length > 0 ? (
+                selectedPayment.items.map((it: any, idx: number) => (
+                  <tr key={idx} className="border-b border-gray-100">
+                    <td className="py-1 font-arabic">{formatArabic(it.product_name)}</td>
+                    <td className="text-center py-1 font-sans">{it.price.toLocaleString()}</td>
+                    <td className="text-center py-1 font-sans">{it.discount || 0}</td>
+                    <td className="text-left py-1 font-sans">{(it.price - (it.discount || 0)).toLocaleString()}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr className="border-b border-gray-100">
+                  <td className="py-1 font-arabic">{formatArabic(selectedPayment?.product_name)}</td>
+                  <td className="text-center py-1 font-sans">{selectedPayment?.contract_total.toLocaleString()}</td>
+                  <td className="text-center py-1 font-sans">{selectedPayment?.contract_discount || 0}</td>
+                  <td className="text-left py-1 font-sans">{(selectedPayment?.contract_total - (selectedPayment?.contract_discount || 0)).toLocaleString()}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          <div className="space-y-1 text-xs font-arabic">
+            <div className="flex justify-between">
+              <span>{formatArabic("الإجمالي:")}</span>
+              <span className="font-sans">{selectedPayment?.contract_total.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between font-bold text-sm border-t border-black pt-1">
+              <span>{formatArabic("الصافي:")}</span>
+              <span className="font-sans">{selectedPayment?.contract_total.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>{formatArabic("المدفوع:")}</span>
+              <span className="font-sans">-{selectedPayment?.amount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-red-600 font-bold border-t border-dashed border-black pt-1">
+              <span>{formatArabic("باقي الفاتورة (الآجل):")}</span>
+              <span className="font-sans">{(selectedPayment?.contract_total - (selectedPayment?.contract_discount || 0) - selectedPayment?.contract_paid).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-dashed border-black my-4"></div>
+
+          <div className="text-center space-y-2">
+            <p className="text-[9px] font-arabic text-gray-600 leading-tight">
+              {formatArabic(settings.receipt_footer_note)}
+            </p>
+            <p className="text-[9px] font-sans text-gray-500">
+              {formatArabic(`For any inquiries please Call: ${settings.company_phone}`)}
+            </p>
+            <div className="flex justify-center">
+              <div className="w-16 h-16 opacity-10">
+                <Logo size="sm" transparent noShadow />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">التاريخ</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">العميل</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">المبلغ</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">الطريقة</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest text-left font-arabic">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                [1,2,3,4].map(i => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={5} className="px-8 py-6"><div className="h-12 bg-gray-100 rounded-xl w-full"></div></td>
+                  </tr>
+                ))
+              ) : filteredPayments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+                        <CreditCard size={32} />
+                      </div>
+                      <p className="text-gray-500 font-arabic">{formatArabic("لا توجد مدفوعات حالياً")}</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredPayments.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-400 font-sans">{format(new Date(p.payment_date), "yyyy-MM-dd")}</span>
+                      <span className="text-[10px] text-gray-300 font-sans">{format(new Date(p.payment_date), "HH:mm")}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <p className="font-bold text-gray-900 font-arabic">{formatArabic(p.company_name)}</p>
+                    <p className="text-[10px] text-gray-400 font-arabic">{formatArabic(p.product_name)}</p>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-green-600">{p.amount.toLocaleString()}</span>
+                      <span className="text-[10px] text-gray-400 font-arabic">ج.م</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold font-arabic">
+                      {formatArabic(p.method)}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 text-left">
+                    <div className="flex items-center justify-end gap-2">
+                      <button 
+                        onClick={() => exportReceipt(p)}
+                        className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all"
+                        title="تحميل الإيصال (JPG)"
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button 
+                        onClick={() => exportThermalReceipt(p)}
+                        className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all"
+                        title="طباعة إيصال حراري"
+                      >
+                        <Printer size={18} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1529,54 +2095,81 @@ const Payments = () => {
 const Licenses = () => {
   const [licenses, setLicenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { notify } = useAuth();
 
   useEffect(() => {
     api.getLicenses().then(setLicenses).finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 font-arabic">تراخيص البرمجيات</h2>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-          [1,2].map(i => <div key={i} className="h-48 bg-white rounded-2xl border border-gray-200 animate-pulse" />)
-        ) : licenses.map((l) => (
-          <div key={l.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4">
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                l.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}>
-                {l.status === 'active' ? 'نشط' : 'منتهي'}
-              </span>
+          [1,2,3].map(i => <div key={i} className="h-48 bg-white rounded-[2rem] border border-gray-100 animate-pulse"></div>)
+        ) : licenses.length === 0 ? (
+          <div className="col-span-full py-20 bg-white rounded-[2rem] border border-gray-100 flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300">
+              <Key size={32} />
             </div>
-            <div className="mb-6">
-              <div className="text-lg font-bold text-gray-900 mb-1 font-arabic">
-                {l.items && l.items.length > 0 ? (
-                  <div className="space-y-1">
-                    {l.items.map((it: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                        <span>{formatArabic(it.product_name)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  formatArabic(l.product_name)
-                )}
-              </div>
-              <p className="text-sm text-gray-500 font-arabic">العميل: {formatArabic(l.company_name)}</p>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-xl mb-4 font-mono text-sm break-all border border-gray-100">
-              {l.license_key}
-            </div>
-            <div className="flex items-center justify-between text-xs text-gray-400 font-bold uppercase tracking-widest font-arabic">
-              <span>تنتهي في: {l.expiry_date}</span>
-              <button className="text-orange-500 hover:text-orange-600">نسخ المفتاح</button>
-            </div>
+            <p className="text-gray-500 font-arabic">{formatArabic("لا توجد تراخيص حالياً")}</p>
           </div>
+        ) : licenses.map((l) => (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={l.id} 
+            className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
+            
+            <div className="relative z-10 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                  <Key size={24} />
+                </div>
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                  l.status === 'active' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'
+                }`}>
+                  {l.status === 'active' ? formatArabic("نشط") : formatArabic("منتهي")}
+                </span>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 font-arabic mb-1">
+                  {l.items && l.items.length > 0 ? (
+                    <div className="space-y-1">
+                      {l.items.map((it: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                          <span>{formatArabic(it.product_name)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    formatArabic(l.product_name)
+                  )}
+                </h3>
+                <p className="text-sm text-gray-500 font-arabic">{formatArabic(l.company_name)}</p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl font-mono text-xs break-all border border-gray-100 text-gray-600">
+                {l.license_key}
+              </div>
+
+              <div className="pt-6 border-t border-gray-50 flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest font-arabic">{formatArabic("تاريخ الانتهاء")}</p>
+                  <p className="font-bold text-gray-700 font-sans">{l.expiry_date}</p>
+                </div>
+                <button 
+                  onClick={() => { navigator.clipboard.writeText(l.license_key); notify("تم نسخ المفتاح!"); }}
+                  className="text-xs font-bold text-orange-500 hover:text-orange-600 uppercase tracking-widest font-arabic"
+                >
+                  نسخ المفتاح
+                </button>
+              </div>
+            </div>
+          </motion.div>
         ))}
       </div>
     </div>
@@ -1592,66 +2185,511 @@ const AuditLogs = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900 font-arabic">سجلات تدقيق النظام</h2>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-        <table className="w-full text-right border-collapse">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الطابع الزمني</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">المستخدم</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الإجراء</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">الكيان</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest font-arabic">التفاصيل</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading ? (
-              [1,2,3].map(i => <tr key={i} className="animate-pulse"><td colSpan={5} className="px-6 py-8 bg-gray-50/50"></td></tr>)
-            ) : logs.map((log) => (
-              <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-xs text-gray-400">{format(new Date(log.timestamp), "yyyy-MM-dd HH:mm:ss")}</td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{log.username || "النظام"}</td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    log.action === 'CREATE' ? 'bg-green-100 text-green-700' : 
-                    log.action === 'UPDATE' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    {log.action === 'CREATE' ? 'إنشاء' : log.action === 'UPDATE' ? 'تحديث' : 'حذف'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600 capitalize font-arabic">
-                  {log.entity === 'clients' ? 'العملاء' : 
-                   log.entity === 'products' ? 'المنتجات' : 
-                   log.entity === 'quotations' ? 'عروض الأسعار' : 
-                   log.entity === 'contracts' ? 'العقود' : 
-                   log.entity === 'payments' ? 'المدفوعات' : log.entity}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500 italic">{log.details}</td>
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50 border-b border-gray-100">
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">التاريخ</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">المستخدم</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">الإجراء</th>
+                <th className="px-8 py-5 text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">التفاصيل</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                [1,2,3,4].map(i => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={4} className="px-8 py-6"><div className="h-12 bg-gray-100 rounded-xl w-full"></div></td>
+                  </tr>
+                ))
+              ) : logs.map((l) => (
+                <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-8 py-6">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-400 font-sans">{format(new Date(l.timestamp), "yyyy-MM-dd")}</span>
+                      <span className="text-[10px] text-gray-300 font-sans">{format(new Date(l.timestamp), "HH:mm")}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
+                        {l.username?.[0] || "S"}
+                      </div>
+                      <span className="font-bold text-gray-700">{l.username || "النظام"}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold font-arabic ${
+                      l.action === 'DELETE' ? 'bg-red-50 text-red-600' : 
+                      l.action === 'CREATE' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {l.action === 'CREATE' ? formatArabic("إنشاء") : l.action === 'UPDATE' ? formatArabic("تحديث") : formatArabic("حذف")}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6">
+                    <p className="text-sm text-gray-500 font-arabic max-w-md truncate" title={l.details}>
+                      {formatArabic(l.details)}
+                    </p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 };
 
+const Settings = () => {
+  const { notify } = useAuth();
+  const [settings, setSettings] = useState<any>({
+    company_name: "",
+    company_address: "",
+    company_phone: "",
+    company_email: "",
+    company_website: "",
+    receipt_footer_note: ""
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getSettings().then(setSettings).finally(() => setLoading(false));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.updateSettings(settings);
+      notify("تم حفظ الإعدادات بنجاح!");
+    } catch (err: any) {
+      notify(err.message, "error");
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden"
+      >
+        <div className="p-8 border-b border-gray-50 bg-gray-50/50">
+          <h2 className="text-2xl font-bold text-gray-900 font-arabic">إعدادات الشركة</h2>
+          <p className="text-sm text-gray-500 font-arabic mt-1">{formatArabic("إدارة معلومات الشركة وتفاصيل الإيصالات")}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">اسم الشركة</label>
+              <input 
+                type="text" required
+                value={settings.company_name || ""}
+                onChange={e => setSettings({...settings, company_name: e.target.value})}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-bold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">رقم الهاتف</label>
+              <input 
+                type="text" required
+                value={settings.company_phone || ""}
+                onChange={e => setSettings({...settings, company_phone: e.target.value})}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-sans"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">البريد الإلكتروني</label>
+              <input 
+                type="email" required
+                value={settings.company_email || ""}
+                onChange={e => setSettings({...settings, company_email: e.target.value})}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-sans"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">الموقع الإلكتروني</label>
+              <input 
+                type="text"
+                value={settings.company_website || ""}
+                onChange={e => setSettings({...settings, company_website: e.target.value})}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-sans"
+              />
+            </div>
+
+            <div className="col-span-full space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">عنوان الشركة</label>
+              <input 
+                type="text" required
+                value={settings.company_address || ""}
+                onChange={e => setSettings({...settings, company_address: e.target.value})}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-arabic"
+              />
+            </div>
+
+            <div className="col-span-full space-y-2">
+              <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">ملاحظة أسفل الإيصال</label>
+              <textarea 
+                value={settings.receipt_footer_note || ""}
+                onChange={e => setSettings({...settings, receipt_footer_note: e.target.value})}
+                className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-arabic resize-none"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-gray-50 flex justify-end">
+            <button 
+              type="submit"
+              className="px-10 py-4 bg-orange-500 text-white font-bold rounded-2xl hover:bg-orange-600 shadow-xl shadow-orange-500/20 transition-all font-arabic"
+            >
+              حفظ التغييرات
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const UsersManagement = () => {
+  const { notify } = useAuth();
+  const [users, setUsers] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [formData, setFormData] = useState({
+    username: "",
+    full_name: "",
+    email: "",
+    password: "",
+    role_id: 0,
+    permissions: ["dashboard"]
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usersData, rolesData] = await Promise.all([
+          api.getUsers(),
+          api.getRoles()
+        ]);
+        setUsers(usersData);
+        setRoles(rolesData);
+        if (rolesData.length > 0) {
+          setFormData(prev => ({ ...prev, role_id: rolesData[0].id }));
+        }
+      } catch (err: any) {
+        notify(err.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const allPermissions = [
+    { id: "dashboard", label: "لوحة التحكم" },
+    { id: "clients", label: "العملاء" },
+    { id: "products", label: "المنتجات" },
+    { id: "quotations", label: "عروض الأسعار" },
+    { id: "contracts", label: "العقود" },
+    { id: "payments", label: "المدفوعات" },
+    { id: "licenses", label: "التراخيص" },
+    { id: "audit-logs", label: "سجل العمليات" },
+    { id: "settings", label: "الإعدادات" },
+    { id: "users", label: "إدارة المستخدمين" },
+  ];
+
+  const handleOpenModal = (user: any = null) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        username: user.username,
+        full_name: user.full_name,
+        email: user.email,
+        password: "",
+        role_id: user.role_id,
+        permissions: user.permissions
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        username: "",
+        full_name: "",
+        email: "",
+        password: "",
+        role_id: roles.length > 0 ? roles[0].id : 0,
+        permissions: ["dashboard"]
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingUser) {
+        await api.updateUser(editingUser.id, formData);
+        notify("تم تحديث بيانات المستخدم بنجاح");
+      } else {
+        await api.createUser(formData);
+        notify("تم إضافة المستخدم بنجاح");
+      }
+      const updatedUsers = await api.getUsers();
+      setUsers(updatedUsers);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      notify(err.message, "error");
+    }
+  };
+
+  const togglePermission = (permId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permId)
+        ? prev.permissions.filter(p => p !== permId)
+        : [...prev.permissions, permId]
+    }));
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("هل أنت متأكد من حذف هذا المستخدم؟")) {
+      try {
+        await api.deleteUser(id);
+        setUsers(users.filter(u => u.id !== id));
+        notify("تم حذف المستخدم بنجاح", "error");
+      } catch (err: any) {
+        notify(err.message, "error");
+      }
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-display font-black text-gray-900 tracking-tight font-arabic">إدارة المستخدمين</h1>
+          <p className="text-gray-500 font-arabic mt-1">تحكم في وصول الموظفين وصلاحياتهم داخل النظام</p>
+        </div>
+        <button 
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 px-6 py-3.5 bg-orange-500 text-white font-bold rounded-2xl hover:bg-orange-600 shadow-xl shadow-orange-500/20 transition-all font-arabic"
+        >
+          <UserPlus size={20} />
+          إضافة مستخدم جديد
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        {users.map(user => (
+          <motion.div 
+            key={user.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                  <UserCog size={32} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 font-arabic">{user.full_name}</h3>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-sm text-gray-400 font-sans">{user.email}</span>
+                    <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                    <span className="text-xs font-black px-2 py-1 bg-gray-100 text-gray-500 rounded-lg uppercase tracking-widest font-arabic">{user.role_name}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 max-w-md justify-end">
+                {user.permissions.slice(0, 4).map((p: string) => (
+                  <span key={p} className="text-[10px] font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-md font-arabic">
+                    {allPermissions.find(ap => ap.id === p)?.label}
+                  </span>
+                ))}
+                {user.permissions.length > 4 && (
+                  <span className="text-[10px] font-bold px-2 py-1 bg-gray-50 text-gray-400 rounded-md font-arabic">
+                    +{user.permissions.length - 4} أخرى
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => handleOpenModal(user)}
+                  className="p-3 bg-gray-50 text-gray-400 hover:bg-orange-50 hover:text-orange-500 rounded-xl transition-all"
+                >
+                  <Edit3 size={18} />
+                </button>
+                <button 
+                  onClick={() => handleDelete(user.id)}
+                  className="p-3 bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setIsModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-3xl bg-white rounded-[40px] shadow-2xl overflow-hidden"
+            >
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                    <UserPlus size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black text-gray-900 font-arabic">{editingUser ? "تعديل مستخدم" : "إضافة مستخدم جديد"}</h2>
+                    <p className="text-sm text-gray-400 font-arabic">أدخل بيانات المستخدم وحدد صلاحياته</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">اسم المستخدم</label>
+                    <input 
+                      type="text" required
+                      value={formData.username}
+                      onChange={e => setFormData({...formData, username: e.target.value})}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-sans"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">الاسم الكامل</label>
+                    <input 
+                      type="text" required
+                      value={formData.full_name}
+                      onChange={e => setFormData({...formData, full_name: e.target.value})}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-arabic"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">البريد الإلكتروني</label>
+                    <input 
+                      type="email" required
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-sans"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">كلمة المرور</label>
+                    <input 
+                      type="password" required={!editingUser}
+                      value={formData.password}
+                      onChange={e => setFormData({...formData, password: e.target.value})}
+                      placeholder={editingUser ? "اتركه فارغاً لعدم التغيير" : ""}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-sans"
+                    />
+                  </div>
+                  <div className="col-span-full space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">الدور الوظيفي</label>
+                    <select 
+                      value={formData.role_id}
+                      onChange={e => setFormData({...formData, role_id: Number(e.target.value)})}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-arabic appearance-none"
+                    >
+                      {roles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-span-full space-y-4">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">الصلاحيات والوصول</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {allPermissions.map(perm => (
+                        <button
+                          key={perm.id}
+                          type="button"
+                          onClick={() => togglePermission(perm.id)}
+                          className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all font-arabic text-sm ${
+                            formData.permissions.includes(perm.id)
+                            ? "bg-orange-50 border-orange-200 text-orange-600 font-bold"
+                            : "bg-white border-gray-100 text-gray-400 hover:border-gray-200"
+                          }`}
+                        >
+                          <span>{perm.label}</span>
+                          {formData.permissions.includes(perm.id) && <ShieldCheck size={16} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 flex justify-end">
+                  <button 
+                    type="submit"
+                    className="px-10 py-4 bg-orange-500 text-white font-bold rounded-2xl hover:bg-orange-600 shadow-xl shadow-orange-500/20 transition-all font-arabic"
+                  >
+                    {editingUser ? "تحديث المستخدم" : "إضافة المستخدم"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const AppRoutes = () => {
+  const { user } = useAuth();
+  
+  const hasPermission = (permission: string) => {
+    return user?.username === "admin" || user?.permissions?.includes(permission);
+  };
+
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/clients" element={<Clients />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/quotations" element={<Quotations />} />
-        <Route path="/contracts" element={<Contracts />} />
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/licenses" element={<Licenses />} />
-        <Route path="/audit-logs" element={<AuditLogs />} />
+        <Route path="/" element={hasPermission("dashboard") ? <Dashboard /> : <Navigate to="/clients" />} />
+        <Route path="/clients" element={hasPermission("clients") ? <Clients /> : <Navigate to="/" />} />
+        <Route path="/products" element={hasPermission("products") ? <Products /> : <Navigate to="/" />} />
+        <Route path="/quotations" element={hasPermission("quotations") ? <Quotations /> : <Navigate to="/" />} />
+        <Route path="/contracts" element={hasPermission("contracts") ? <Contracts /> : <Navigate to="/" />} />
+        <Route path="/payments" element={hasPermission("payments") ? <Payments /> : <Navigate to="/" />} />
+        <Route path="/licenses" element={hasPermission("licenses") ? <Licenses /> : <Navigate to="/" />} />
+        <Route path="/audit-logs" element={hasPermission("audit-logs") ? <AuditLogs /> : <Navigate to="/" />} />
+        <Route path="/settings" element={hasPermission("settings") ? <Settings /> : <Navigate to="/" />} />
+        <Route path="/users-management" element={hasPermission("users") ? <UsersManagement /> : <Navigate to="/" />} />
       </Routes>
     </Layout>
   );

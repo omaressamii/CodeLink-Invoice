@@ -45,4 +45,13 @@ export const api = {
   getStats: () => api.fetch("/stats"),
   
   getAuditLogs: () => api.fetch("/audit-logs"),
+  
+  getUsers: () => api.fetch("/users"),
+  createUser: (data: any) => api.fetch("/users", { method: "POST", body: JSON.stringify(data) }),
+  updateUser: (id: number, data: any) => api.fetch(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteUser: (id: number) => api.fetch(`/users/${id}`, { method: "DELETE" }),
+  getRoles: () => api.fetch("/roles"),
+
+  getSettings: () => api.fetch("/settings"),
+  updateSettings: (data: any) => api.fetch("/settings", { method: "POST", body: JSON.stringify(data) }),
 };
