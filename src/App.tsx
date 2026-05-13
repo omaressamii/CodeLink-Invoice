@@ -5,7 +5,7 @@ import {
   Receipt, CreditCard, Key, History, LogOut, Menu, X, 
   ChevronRight, Plus, Download, Search, Filter, AlertCircle,
   TrendingUp, Banknote, Briefcase, Clock, Printer, Calculator, CheckCircle2,
-  ShieldCheck, UserPlus, UserCog, Trash2, Edit3,
+  ShieldCheck, UserPlus, UserCog, Trash2, Edit3, User, Mail, Phone,
   Settings as SettingsIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
