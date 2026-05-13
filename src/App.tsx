@@ -173,9 +173,9 @@ const Sidebar = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) =>
         onClick={toggle}
       />
       
-      {/* Sidebar */}
-      <aside className={`fixed top-0 right-0 bottom-0 w-72 bg-dark-800 text-white z-50 transform transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isOpen ? "translate-x-0 shadow-2xl shadow-black/50" : "translate-x-full"}`}>
-        <div className="p-8 border-b border-white/5 flex items-center justify-between">
+      {/* Sidebar - Persistent Drawer */}
+      <aside className={`fixed top-0 right-0 bottom-0 w-72 bg-dark-800 text-white z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${isOpen ? "translate-x-0 shadow-2xl shadow-black/50" : "translate-x-full lg:translate-x-0"}`}>
+        <div className="p-8 border-b border-white/5 flex items-center justify-between lg:justify-center">
           <div className="flex items-center gap-3">
             <Logo size="md" />
             <span className="text-2xl font-display font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">CodeLink</span>
@@ -250,22 +250,22 @@ const Header = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
   };
 
   return (
-    <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-30">
-      <div className="flex items-center gap-6">
-        <button onClick={toggleSidebar} className="p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all duration-300 border border-transparent hover:border-brand-100">
-          <Menu size={24} />
+    <header className="h-16 md:h-20 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
+      <div className="flex items-center gap-2 md:gap-6">
+        <button onClick={toggleSidebar} className="p-2 md:p-2.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all duration-300 border border-transparent hover:border-brand-100">
+          <Menu size={20} className="md:w-[24px] md:h-[24px]" />
         </button>
-        <div className="space-y-0.5">
-          <h1 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{getPageTitle()}</h1>
-          <div className="flex items-center gap-2 text-[11px] text-gray-400 font-arabic uppercase tracking-wider">
+        <div className="space-y-0.1 md:space-y-0.5">
+          <h1 className="text-lg md:text-2xl font-display font-bold text-gray-900 tracking-tight">{getPageTitle()}</h1>
+          <div className="hidden md:flex items-center gap-2 text-[11px] text-gray-400 font-arabic uppercase tracking-wider">
             <span>CodeLink</span>
             <ChevronRight size={10} className="rotate-180" />
             <span className="text-brand-500 font-bold">{getPageTitle()}</span>
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-6">
-        <div className="text-left hidden md:block px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
+      <div className="flex items-center gap-4 md:gap-6">
+        <div className="text-left hidden lg:block px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest font-arabic mb-0.5">{formatArabic("اليوم")}</p>
           <p className="text-xs text-gray-600 font-bold font-sans">{format(new Date(), "EEEE, d MMMM yyyy")}</p>
         </div>
@@ -276,6 +276,7 @@ const Header = ({ toggleSidebar }: { toggleSidebar: () => void }) => {
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+  const location = useLocation();
 
   useEffect(() => {
     const handleResize = () => {
@@ -289,12 +290,19 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const bottomNavItems = [
+    { icon: LayoutDashboard, path: "/", label: "الرئيسية" },
+    { icon: Users, path: "/clients", label: "العملاء" },
+    { icon: FileSignature, path: "/contracts", label: "العقود" },
+    { icon: CreditCard, path: "/payments", label: "المدفوعات" },
+  ];
+
   return (
     <div className="min-h-screen bg-[#f8fafc] flex">
       <Sidebar isOpen={isSidebarOpen} toggle={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-500 ease-in-out ${isSidebarOpen ? "lg:mr-72" : "mr-0"}`}>
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="p-8 flex-1 max-w-[1600px] mx-auto w-full">
+        <main className="p-4 md:p-8 pb-24 md:pb-8 flex-1 max-w-[1600px] mx-auto w-full overflow-x-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={window.location.pathname}
@@ -308,6 +316,22 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-3 flex items-center justify-around z-[100] lg:hidden safe-bottom">
+        {bottomNavItems.map((item) => (
+          <Link 
+            key={item.path} 
+            to={item.path}
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              location.pathname === item.path ? "text-brand-500" : "text-gray-400"
+            }`}
+          >
+            <item.icon size={20} className={location.pathname === item.path ? "scale-110" : ""} />
+            <span className="text-[10px] font-bold font-arabic">{formatArabic(item.label)}</span>
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 };
@@ -424,8 +448,8 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-6 md:space-y-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {cards.map((card, i) => (
           <motion.div 
             key={i}
@@ -456,15 +480,15 @@ const Dashboard = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm"
+          className="lg:col-span-2 bg-white p-6 md:p-10 rounded-[2.5rem] border border-gray-100 shadow-sm"
         >
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between mb-6 md:mb-10">
             <div className="space-y-1">
-              <h2 className="text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("نظرة عامة على الإيرادات")}</h2>
-              <p className="text-sm text-gray-400 font-arabic">{formatArabic("تحليل الإيرادات الشهرية للسنة الحالية")}</p>
+              <h2 className="text-xl md:text-2xl font-display font-bold text-gray-900 tracking-tight">{formatArabic("نظرة عامة على الإيرادات")}</h2>
+              <p className="text-xs md:text-sm text-gray-400 font-arabic">{formatArabic("تحليل الإيرادات الشهرية للسنة الحالية")}</p>
             </div>
             <div className="flex gap-2">
-              <button className="px-5 py-2 text-xs font-bold bg-gray-50 text-gray-600 rounded-full font-arabic border border-gray-100 hover:bg-gray-100 transition-colors">12 شهر</button>
+              <button className="px-5 py-2 text-[10px] md:text-xs font-bold bg-gray-50 text-gray-600 rounded-full font-arabic border border-gray-100 hover:bg-gray-100 transition-colors">12 شهر</button>
             </div>
           </div>
           <div className="h-80 min-h-[320px]">
@@ -517,11 +541,11 @@ const Dashboard = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
-          className="bg-dark-800 p-10 rounded-[2.5rem] shadow-2xl shadow-black/20 text-white relative overflow-hidden"
+          className="bg-dark-800 p-6 md:p-10 rounded-[2.5rem] shadow-2xl shadow-black/20 text-white relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
           <div className="relative z-10">
-            <h2 className="text-2xl font-display font-bold mb-10 tracking-tight">{formatArabic("إجراءات سريعة")}</h2>
+            <h2 className="text-xl md:text-2xl font-display font-bold mb-6 md:mb-10 tracking-tight">{formatArabic("إجراءات سريعة")}</h2>
             <div className="space-y-4">
               <Link to="/quotations" className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-brand-500 hover:text-dark-800 transition-all duration-500 group border border-white/5 hover:border-brand-400">
                 <div className="flex items-center gap-4">
@@ -618,7 +642,8 @@ const Clients = () => {
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
@@ -676,6 +701,46 @@ const Clients = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-gray-50">
+          {loading ? (
+            [1,2,3].map(i => (
+              <div key={i} className="p-6 animate-pulse space-y-3">
+                <div className="h-4 bg-gray-100 rounded-full w-1/2" />
+                <div className="h-3 bg-gray-50 rounded-full w-3/4" />
+              </div>
+            ))
+          ) : clients.map((client) => (
+            <div key={client.id} className="p-6 hover:bg-gray-50/50 transition-colors">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="font-bold text-gray-900 font-arabic">{formatArabic(client.company_name)}</h4>
+                  <p className="text-xs text-gray-400 font-arabic mt-0.5">{formatArabic(client.address)}</p>
+                </div>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold font-arabic ${
+                  client.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'
+                }`}>
+                  {formatArabic(client.status === 'active' ? 'نشط' : 'غير نشط')}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <User size={14} className="text-gray-400" />
+                  <span className="font-arabic">{formatArabic(client.contact_person)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <Mail size={14} className="text-gray-400" />
+                  <span className="font-sans">{client.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
+                  <Phone size={14} className="text-gray-400" />
+                  <span className="font-sans">{client.phone}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -692,7 +757,7 @@ const Clients = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl relative z-10 border border-gray-100"
+              className="bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl relative z-10 border border-gray-100 self-end md:self-center"
             >
               <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
                 <div className="space-y-1">
@@ -1365,6 +1430,7 @@ const Contracts = () => {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("تحويل بنكي");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchContracts = () => {
@@ -1383,11 +1449,13 @@ const Contracts = () => {
         contract_id: selectedContract.id,
         amount: parseFloat(paymentAmount),
         method: paymentMethod,
-        notes: paymentNotes
+        notes: paymentNotes,
+        payment_date: paymentDate
       });
       setShowPaymentModal(false);
       setPaymentAmount("");
       setPaymentNotes("");
+      setPaymentDate(format(new Date(), "yyyy-MM-dd"));
       fetchContracts();
       notify("تم تسجيل الدفعة بنجاح!");
     } catch (err: any) {
@@ -1416,7 +1484,8 @@ const Contracts = () => {
       </div>
 
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
@@ -1497,7 +1566,12 @@ const Contracts = () => {
                   <td className="px-8 py-6 text-left">
                     {c.status !== 'completed' && (
                       <button 
-                        onClick={() => { setSelectedContract(c); setPaymentAmount((c.total_price - (c.discount || 0) - c.paid_amount).toString()); setShowPaymentModal(true); }}
+                        onClick={() => { 
+                          setSelectedContract(c); 
+                          setPaymentAmount((c.total_price - (c.discount || 0) - c.paid_amount).toString()); 
+                          setPaymentDate(format(new Date(), "yyyy-MM-dd"));
+                          setShowPaymentModal(true); 
+                        }}
                         className="px-4 py-2 bg-orange-50 text-orange-600 rounded-xl text-xs font-bold hover:bg-orange-600 hover:text-white transition-all font-arabic"
                       >
                         تسجيل دفعة
@@ -1508,6 +1582,74 @@ const Contracts = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-gray-50">
+          {loading ? (
+            [1,2].map(i => (
+              <div key={i} className="p-6 animate-pulse space-y-4">
+                <div className="h-4 bg-gray-100 rounded-full w-1/2" />
+                <div className="h-3 bg-gray-50 rounded-full w-3/4" />
+              </div>
+            ))
+          ) : filteredContracts.length === 0 ? (
+            <div className="p-12 text-center text-gray-500 font-arabic">{formatArabic("لا توجد عقود حالياً")}</div>
+          ) : filteredContracts.map((c) => (
+            <div key={c.id} className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold">
+                    {c.company_name[0]}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 font-arabic">{formatArabic(c.company_name)}</h4>
+                    <p className="text-[10px] text-gray-400 font-sans"># {c.id.toString().padStart(4, '0')}</p>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-arabic ${
+                  c.status === 'completed' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'
+                }`}>
+                  {c.status === 'completed' ? formatArabic("مكتمل") : formatArabic("نشط")}
+                </span>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-2xl mb-4 space-y-2">
+                {c.items && c.items.length > 0 ? (
+                  c.items.map((it: any, idx: number) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <span className="font-arabic text-gray-600">{formatArabic(it.product_name)}</span>
+                      <span className="font-bold text-gray-900">{it.price.toLocaleString()}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-arabic text-gray-600">{formatArabic(c.product_name)}</span>
+                    <span className="font-bold text-gray-900">{c.total_price.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 font-arabic uppercase">{formatArabic("المتبقي")}</p>
+                  <p className="text-lg font-bold text-red-500">{(c.total_price - (c.discount || 0) - c.paid_amount).toLocaleString()}</p>
+                </div>
+                {c.status !== 'completed' && (
+                  <button 
+                    onClick={() => { 
+                      setSelectedContract(c); 
+                      setPaymentAmount((c.total_price - (c.discount || 0) - c.paid_amount).toString()); 
+                      setShowPaymentModal(true); 
+                    }}
+                    className="px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold font-arabic shadow-lg shadow-orange-500/20"
+                  >
+                    تسجيل دفعة
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -1541,6 +1683,16 @@ const Contracts = () => {
                     value={paymentAmount}
                     onChange={e => setPaymentAmount(e.target.value)}
                     className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-bold text-lg"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest font-arabic">تاريخ الدفعة</label>
+                  <input 
+                    type="date" required
+                    value={paymentDate}
+                    onChange={e => setPaymentDate(e.target.value)}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all text-right font-bold"
                   />
                 </div>
 
@@ -1591,6 +1743,7 @@ const Payments = () => {
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [isThermal, setIsThermal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
     loadData();
@@ -1745,23 +1898,117 @@ const Payments = () => {
     }
   };
 
-  const filteredPayments = payments.filter(p => 
-    p.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.method.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPayments = payments.filter(p => {
+    const matchesSearch = p.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         p.method.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDate = !dateFilter || format(new Date(p.payment_date), "yyyy-MM-dd") === dateFilter;
+    return matchesSearch && matchesDate;
+  });
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const thisMonthStr = format(new Date(), "yyyy-MM");
+  
+  const totalToday = payments
+    .filter(p => format(new Date(p.payment_date), "yyyy-MM-dd") === todayStr)
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const totalThisMonth = payments
+    .filter(p => format(new Date(p.payment_date), "yyyy-MM") === thisMonthStr)
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const totalFiltered = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  const prevPaymentsTotal = selectedPayment ? payments
+    .filter(p => p.contract_id === selectedPayment.contract_id && p.id !== selectedPayment.id)
+    .reduce((sum, p) => sum + p.amount, 0) : 0;
 
   return (
     <div className="space-y-8">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/40 flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("إجمالي تحصيل اليوم")}</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-3xl font-display font-black text-gray-900">{totalToday.toLocaleString()}</h3>
+              <span className="text-xs font-arabic text-gray-400">ج.م</span>
+            </div>
+          </div>
+          <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all duration-500">
+            <TrendingUp size={24} />
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/40 flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest font-arabic">{formatArabic("إجمالي تحصيل الشهر")}</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-3xl font-display font-black text-gray-900">{totalThisMonth.toLocaleString()}</h3>
+              <span className="text-xs font-arabic text-gray-400">ج.م</span>
+            </div>
+          </div>
+          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all duration-500">
+            <Banknote size={24} />
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-brand-500 p-6 rounded-[2.5rem] border border-brand-400 shadow-xl shadow-brand-500/30 flex items-center justify-between group"
+        >
+          <div className="space-y-1 text-dark-900">
+            <p className="text-xs font-bold uppercase tracking-widest font-arabic opacity-60">{formatArabic("إجمالي البحث/الفلترة")}</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-3xl font-display font-black">{totalFiltered.toLocaleString()}</h3>
+              <span className="text-xs font-arabic opacity-60">ج.م</span>
+            </div>
+          </div>
+          <div className="w-14 h-14 bg-dark-900/10 rounded-2xl flex items-center justify-center text-dark-900 group-hover:bg-dark-900 group-hover:text-white transition-all duration-500">
+            <Calculator size={24} />
+          </div>
+        </motion.div>
+      </div>
+
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:w-80 group">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder={formatArabic("بحث في المدفوعات...")}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pr-12 pl-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-arabic text-right"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <div className="relative w-full sm:w-80 group">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
+            <input 
+              type="text" 
+              placeholder={formatArabic("بحث في المدفوعات...")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pr-12 pl-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-arabic text-right shadow-sm"
+            />
+          </div>
+          <div className="relative w-full sm:w-56 group">
+            <Clock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={18} />
+            <input 
+              type="date" 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full pr-12 pl-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all font-sans text-right shadow-sm"
+            />
+            {dateFilter && (
+              <button 
+                onClick={() => setDateFilter("")}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1855,6 +2102,10 @@ const Payments = () => {
                   <span className="text-2xl font-bold font-sans text-gray-900">{selectedPayment?.contract_total.toLocaleString()} <span className="text-sm font-arabic">{formatArabic("ج.م")}</span></span>
                 </div>
                 <div className="flex justify-between items-center text-red-600">
+                  <span className="text-sm font-bold font-arabic">{formatArabic("مدفوعات سابقة")}</span>
+                  <span className="font-sans font-bold">-{prevPaymentsTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-red-600">
                   <span className="text-sm font-bold font-arabic">{formatArabic("المبلغ المدفوع حالياً")}</span>
                   <span className="font-sans font-bold">-{selectedPayment?.amount.toLocaleString()}</span>
                 </div>
@@ -1866,9 +2117,38 @@ const Payments = () => {
             </div>
 
             {selectedPayment?.notes && (
-              <div className="mb-12 p-6 bg-orange-50 rounded-2xl border-r-4 border-orange-500">
+              <div className="mb-8 p-6 bg-orange-50 rounded-2xl border-r-4 border-orange-500">
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-orange-600 font-arabic">{formatArabic("ملاحظات إضافية")}</p>
                 <p className="text-sm font-arabic text-gray-700 leading-relaxed">{formatArabic(selectedPayment.notes)}</p>
+              </div>
+            )}
+
+            {/* Previous Payments History */}
+            {payments.filter(p => p.contract_id === selectedPayment?.contract_id && p.id !== selectedPayment?.id).length > 0 && (
+              <div className="mb-12">
+                <h3 className="text-sm font-bold font-arabic text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-200 pb-2">{formatArabic("سجل الدفعات السابقة:")}</h3>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-gray-400 border-b border-gray-100">
+                      <th className="py-2 text-right font-arabic">{formatArabic("التاريخ")}</th>
+                      <th className="py-2 text-center font-arabic">{formatArabic("المبلغ")}</th>
+                      <th className="py-2 text-left font-arabic">{formatArabic("الطريقة")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {payments
+                      .filter(p => p.contract_id === selectedPayment?.contract_id && p.id !== selectedPayment?.id)
+                      .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
+                      .map(prev => (
+                        <tr key={prev.id} className="text-gray-600">
+                          <td className="py-2 font-sans">{format(new Date(prev.payment_date), "yyyy/MM/dd")}</td>
+                          <td className="py-2 text-center font-sans font-bold">{prev.amount.toLocaleString()}</td>
+                          <td className="py-2 text-left font-arabic">{formatArabic(prev.method)}</td>
+                        </tr>
+                      ))
+                    }
+                  </tbody>
+                </table>
               </div>
             )}
 
@@ -1984,6 +2264,10 @@ const Payments = () => {
               <span className="font-sans">{selectedPayment?.contract_total.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-gray-600">
+              <span>{formatArabic("سابقاً:")}</span>
+              <span className="font-sans">-{prevPaymentsTotal.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
               <span>{formatArabic("المدفوع:")}</span>
               <span className="font-sans">-{selectedPayment?.amount.toLocaleString()}</span>
             </div>
@@ -1992,6 +2276,28 @@ const Payments = () => {
               <span className="font-sans">{(selectedPayment?.contract_total - (selectedPayment?.contract_discount || 0) - selectedPayment?.contract_paid).toLocaleString()}</span>
             </div>
           </div>
+
+          {/* Thermal Previous Payments History */}
+          {payments.filter(p => p.contract_id === selectedPayment?.contract_id && p.id !== selectedPayment?.id).length > 0 && (
+            <div className="mt-4">
+              <div className="border-t border-dashed border-black mb-2 pt-2">
+                <p className="text-[10px] font-bold font-arabic mb-1 text-center">{formatArabic("دفعات سابقة لهذا العقد:")}</p>
+                <div className="space-y-1">
+                  {payments
+                    .filter(p => p.contract_id === selectedPayment?.contract_id && p.id !== selectedPayment?.id)
+                    .sort((a, b) => new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime())
+                    .map(prev => (
+                      <div key={prev.id} className="flex justify-between text-[9px] font-sans">
+                        <span>{format(new Date(prev.payment_date), "yyyy/MM/dd")}</span>
+                        <span className="font-bold">{prev.amount.toLocaleString()}</span>
+                        <span className="font-arabic">{formatArabic(prev.method)}</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="border-t border-dashed border-black my-4"></div>
 
@@ -2012,7 +2318,8 @@ const Payments = () => {
       </div>
 
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
@@ -2086,6 +2393,50 @@ const Payments = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-gray-50">
+          {loading ? (
+            [1,2,3].map(i => (
+              <div key={i} className="p-6 animate-pulse space-y-4">
+                <div className="h-4 bg-gray-100 rounded-full w-1/2" />
+                <div className="h-3 bg-gray-50 rounded-full w-3/4" />
+              </div>
+            ))
+          ) : filteredPayments.length === 0 ? (
+            <div className="p-12 text-center text-gray-500 font-arabic">{formatArabic("لا توجد مدفوعات حالياً")}</div>
+          ) : filteredPayments.map((p) => (
+            <div key={p.id} className="p-6 hover:bg-gray-50/50 transition-colors">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-xs text-gray-400 font-sans">{format(new Date(p.payment_date), "yyyy-MM-dd HH:mm")}</p>
+                  <h4 className="font-bold text-gray-900 font-arabic mt-1">{formatArabic(p.company_name)}</h4>
+                  <p className="text-[10px] text-gray-500 font-arabic">{formatArabic(p.product_name)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600 leading-none">{p.amount.toLocaleString()}</p>
+                  <p className="text-[10px] text-gray-400 font-arabic mt-1">{formatArabic(p.method)}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => exportReceipt(p)}
+                  className="flex-1 py-3 bg-orange-50 text-orange-600 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 font-arabic"
+                >
+                  <Download size={14} />
+                  إيصال عادى
+                </button>
+                <button 
+                  onClick={() => exportThermalReceipt(p)}
+                  className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 font-arabic"
+                >
+                  <Printer size={14} />
+                  إيصال حراري
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -2187,7 +2538,8 @@ const AuditLogs = () => {
   return (
     <div className="space-y-8">
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
@@ -2237,6 +2589,32 @@ const AuditLogs = () => {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="md:hidden divide-y divide-gray-50">
+          {loading ? (
+            [1,2,3].map(i => (
+              <div key={i} className="p-4 animate-pulse h-20 bg-gray-50/50" />
+            ))
+          ) : logs.map((l) => (
+            <div key={l.id} className="p-4 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-gray-400 font-sans">{format(new Date(l.timestamp), "yyyy-MM-dd HH:mm")}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold font-arabic ${
+                  l.action === 'DELETE' ? 'bg-red-50 text-red-600' : 
+                  l.action === 'CREATE' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                }`}>
+                  {l.action === 'CREATE' ? "إنشاء" : l.action === 'UPDATE' ? "تحديث" : "حذف"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500">{l.username?.[0] || "S"}</div>
+                <span className="text-xs font-bold text-gray-700">{l.username || "النظام"}</span>
+              </div>
+              <p className="text-[11px] text-gray-500 font-arabic">{formatArabic(l.details)}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

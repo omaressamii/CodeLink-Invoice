@@ -430,9 +430,10 @@ async function startServer() {
 
   // Payments
   app.post("/api/payments", authenticateToken, (req, res) => {
-    const { contract_id, amount, method, notes } = req.body;
-    const result = db.prepare("INSERT INTO payments (contract_id, amount, method, notes) VALUES (?, ?, ?, ?)")
-      .run(contract_id, amount, method, notes || "");
+    const { contract_id, amount, method, notes, payment_date } = req.body;
+    const finalDate = payment_date || new Date().toISOString();
+    const result = db.prepare("INSERT INTO payments (contract_id, amount, method, notes, payment_date) VALUES (?, ?, ?, ?, ?)")
+      .run(contract_id, amount, method, notes || "", finalDate);
     
     // Update contract paid amount
     const contract = db.prepare("SELECT * FROM contracts WHERE id = ?").get(contract_id) as any;
